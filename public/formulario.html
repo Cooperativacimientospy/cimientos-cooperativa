@@ -1,0 +1,952 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+<title>Solicitud de Admisión — Cooperativa Cimientos</title>
+<link rel="stylesheet" href="fonts.css" />
+<link rel="stylesheet" href="styles-formulario.css" />
+</head>
+<body>
+
+<div class="beta-topbar">
+  <div><span class="beta-dot"></span><strong>Formulario en línea</strong><small>Envío seguro a la Cooperativa Cimientos</small></div>
+  <div class="beta-actions"><a href="estatuto-cimientos.html">Consultar estatuto</a></div>
+</div>
+
+<div class="page">
+  <div class="brand">
+    <div class="brand-mark">C</div>
+    <div class="brand-text">
+      <strong>Cooperativa Cimientos Ltda.</strong>
+      <span id="brandTagline">Solicitud de admisión de socio</span>
+    </div>
+  </div>
+
+  <!-- ===================== FORMULARIO (wizard) ===================== -->
+  <div id="formView">
+    <div class="draft-banner" id="draftBanner" hidden>
+      <span>📝 Tenés un formulario <strong>sin terminar</strong>. ¿Continuamos donde lo dejaste?</span>
+      <div class="draft-banner-actions">
+        <button type="button" id="draftContinue" class="draft-continue">Continuar</button>
+        <button type="button" id="draftDiscard" class="draft-discard">Empezar de nuevo</button>
+      </div>
+    </div>
+
+    <div class="progress-track" id="progressTrack"></div>
+
+    <div class="card">
+      <form id="wizardForm" novalidate>
+
+        <!-- PASO 1 — Datos personales -->
+        <section class="step" data-step="0">
+          <div class="step-label">Paso 1 de 7</div>
+          <h2 class="step-title">Tus datos personales</h2>
+          <p class="step-help">Como figuran en tu cédula de identidad.</p>
+
+          <div class="field">
+            <label for="apellidos_nombres">Apellidos y Nombres *</label>
+            <input type="text" id="apellidos_nombres" required autocomplete="name" />
+          </div>
+
+          <div class="row2">
+            <div class="field">
+              <label for="cedula">Cédula de Identidad *</label>
+              <input type="text" id="cedula" inputmode="numeric" required />
+            </div>
+            <div class="field">
+              <label for="fecha_nacimiento">Fecha de nacimiento *</label>
+              <input type="date" id="fecha_nacimiento" required />
+            </div>
+          </div>
+
+          <div class="row2">
+            <div class="field">
+              <label for="nacionalidad">Nacionalidad *</label>
+              <input type="text" id="nacionalidad" value="Paraguaya" required />
+            </div>
+            <div class="field">
+              <label for="estado_civil">Estado Civil *</label>
+              <select id="estado_civil" required>
+                <option value="">Elegí una opción</option>
+                <option>Soltero/a</option>
+                <option>Casado/a</option>
+                <option>Unión de hecho</option>
+                <option>Divorciado/a</option>
+                <option>Viudo/a</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="profesion_oficio">Profesión u Oficio</label>
+            <input type="text" id="profesion_oficio" />
+          </div>
+
+          <div class="field">
+            <label>Género *</label>
+            <div class="choice-row">
+              <label class="choice"><input type="radio" name="genero" value="M" required /> M</label>
+              <label class="choice"><input type="radio" name="genero" value="F" /> F</label>
+              <label class="choice"><input type="radio" name="genero" value="Otro" /> Otro</label>
+            </div>
+          </div>
+        </section>
+
+        <!-- PASO 2 — Domicilio y contacto -->
+        <section class="step" data-step="1" hidden>
+          <div class="step-label">Paso 2 de 7</div>
+          <h2 class="step-title">Domicilio y contacto</h2>
+          <p class="step-help">Así te ubicamos y te avisamos el estado de tu solicitud.</p>
+
+          <div class="row2">
+            <div class="field">
+              <label for="ciudad">Ciudad *</label>
+              <input type="text" id="ciudad" required />
+            </div>
+            <div class="field">
+              <label for="barrio">Barrio</label>
+              <input type="text" id="barrio" />
+            </div>
+          </div>
+
+          <div class="row2">
+            <div class="field">
+              <label for="departamento">Departamento</label>
+              <input type="text" id="departamento" value="Central" />
+            </div>
+            <div class="field">
+              <label for="tipo_vivienda">Tipo de vivienda</label>
+              <select id="tipo_vivienda"><option value="">Elegí una opción</option><option>Propia</option><option>Alquilada</option><option>Familiar</option><option>Otra</option></select>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="direccion">Dirección (Calle y N°) *</label>
+            <input type="text" id="direccion" required />
+          </div>
+
+          <div class="field">
+            <label for="celular_whatsapp">Celular / WhatsApp *</label>
+            <input type="tel" id="celular_whatsapp" inputmode="tel" placeholder="09XX XXX XXX" required />
+          </div>
+
+          <div class="field">
+            <label for="correo_electronico">Correo Electrónico</label>
+            <input type="email" id="correo_electronico" />
+          </div>
+
+          <div class="field">
+            <label>¿Cómo preferís que te contactemos?</label>
+            <div class="choice-row"><label class="choice"><input type="radio" name="contacto_preferido" value="WhatsApp" checked /> WhatsApp</label><label class="choice"><input type="radio" name="contacto_preferido" value="Llamada" /> Llamada</label><label class="choice"><input type="radio" name="contacto_preferido" value="Correo" /> Correo</label></div>
+          </div>
+        </section>
+
+        <!-- PASO 3 — Actividad económica (SEPRELAD) -->
+        <section class="step" data-step="2" hidden>
+          <div class="step-label">Paso 3 de 7</div>
+          <h2 class="step-title">Actividad económica</h2>
+          <p class="step-help">Dato exigido por la normativa SEPRELAD para todas las cooperativas.</p>
+
+          <div class="field">
+            <label>Condición Laboral *</label>
+            <div class="choice-group">
+              <label class="choice"><input type="radio" name="condicion_laboral" value="Dependiente" required /> Dependiente</label>
+              <label class="choice"><input type="radio" name="condicion_laboral" value="Independiente / Profesional" /> Independiente / Profesional</label>
+              <label class="choice"><input type="radio" name="condicion_laboral" value="Comerciante / Empresario" /> Comerciante / Empresario</label>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="empresa_ruc">Empresa / RUC</label>
+            <input type="text" id="empresa_ruc" />
+          </div>
+
+          <div class="row2">
+            <div class="field"><label for="cargo_laboral">Cargo o función</label><input type="text" id="cargo_laboral" /></div>
+            <div class="field"><label for="antiguedad_laboral">Antigüedad</label><input type="text" id="antiguedad_laboral" placeholder="Ej. 3 años" /></div>
+          </div>
+
+          <div class="field"><label for="direccion_laboral">Dirección laboral</label><input type="text" id="direccion_laboral" /></div>
+
+          <div class="field">
+            <label>¿Ejercés o ejerciste un cargo público o político?</label>
+            <div class="choice-row"><label class="choice"><input type="radio" name="cargo_publico" value="No" checked /> No</label><label class="choice"><input type="radio" name="cargo_publico" value="Sí" /> Sí</label></div>
+            <div class="hint">Información complementaria para el conocimiento del socio; no determina por sí sola la admisión.</div>
+          </div>
+
+          <div class="field">
+            <label>¿Trabajás o trabajaste en una ONG?</label>
+            <div class="choice-row"><label class="choice"><input type="radio" name="trabajo_ong" value="No" checked /> No</label><label class="choice"><input type="radio" name="trabajo_ong" value="Sí" /> Sí</label></div>
+          </div>
+
+          <div class="field">
+            <label for="origen_fondos">Origen de Fondos *</label>
+            <textarea id="origen_fondos" required placeholder="Ej: salario, actividad comercial propia, honorarios profesionales..."></textarea>
+            <div class="hint">Declaro que los fondos que aportaré a la cooperativa provienen de esta actividad lícita.</div>
+          </div>
+        </section>
+
+        <!-- PASO 4 — Aportes y capital -->
+        <section class="step" data-step="3" hidden>
+          <div class="step-label">Paso 4 de 7</div>
+          <h2 class="step-title">Aportes y capital</h2>
+          <p class="step-help">Al asociarte pagás un único monto fijo. Después, ya como socio, vas a aportar mensualmente para ir formando tu capital.</p>
+
+          <div class="field">
+            <label for="derecho_admision">Derecho de Admisión — pagás esto hoy (tasa única, no reembolsable)</label>
+            <input type="text" id="derecho_admision" value="Gs. 150.000" disabled />
+            <div class="hint">Monto fijo, no editable. Fijado por el Consejo de Administración conforme al Art. 8° inc. c del Estatuto.</div>
+          </div>
+
+          <div class="field">
+            <label>Forma de Pago del derecho de admisión *</label>
+            <div class="choice-row">
+              <label class="choice"><input type="radio" name="forma_pago" value="Efectivo" required /> Efectivo</label>
+              <label class="choice"><input type="radio" name="forma_pago" value="Transferencia" /> Transferencia</label>
+            </div>
+          </div>
+
+          <div class="field-group-header">
+            <strong>¿Querés adelantar tu aporte de capital? (opcional)</strong>
+            <p class="step-help" style="margin:2px 0 0;">Una vez admitido, el Estatuto (Art. 8° inc. g) te pide aportar Gs. 50.000 por mes (30.000 a certificados de aportación + 20.000 al Fondo de Solidaridad) — eso arranca solo después de tu admisión, no hace falta pagarlo ahora. Si preferís adelantar algo desde ya, completá estos dos campos; si no, dejalos en blanco y arrancás con la cuota mensual normal.</p>
+          </div>
+
+          <div class="row2">
+            <div class="field">
+              <label for="cuotas_partes_suscriptas">Cuotas partes que querés adelantar</label>
+              <input type="number" id="cuotas_partes_suscriptas" min="0" placeholder="Opcional" />
+            </div>
+            <div class="field">
+              <label for="monto_aporte_inicial">Monto del adelanto</label>
+              <input type="number" id="monto_aporte_inicial" min="0" placeholder="Gs. (opcional)" />
+            </div>
+          </div>
+        </section>
+
+        <!-- PASO 5 — Referente / socio proponente -->
+        <section class="step" data-step="4" hidden>
+          <div class="step-label">Paso 5 de 7</div>
+          <h2 class="step-title">Socio referente</h2>
+          <p class="step-help">El Estatuto (Art. 8° inc. e) pide contar con al menos un socio fundador, o con antigüedad mínima de 1 año, como proponente. Si no conocés a nadie todavía, dejalo en blanco y el Consejo te asigna uno al revisar tu solicitud.</p>
+
+          <div class="field">
+            <label for="referente_nombre">Nombre del socio referente</label>
+            <input type="text" id="referente_nombre" placeholder="Opcional" />
+          </div>
+
+          <div class="field">
+            <label for="referente_cedula">Cédula del socio referente</label>
+            <input type="text" id="referente_cedula" inputmode="numeric" placeholder="Opcional" />
+          </div>
+        </section>
+
+        <!-- PASO 6 — Beneficiarios -->
+        <section class="step" data-step="5" hidden>
+          <div class="step-label">Paso 6 de 7</div>
+          <h2 class="step-title">Beneficiarios</h2>
+          <p class="step-help">En caso de fallecimiento, tus haberes se entregan a quienes designes acá. Podés agregar más de uno y dejarlo para después si preferís.</p>
+
+          <div id="beneficiariosList"></div>
+          <button type="button" class="add-link" id="addBeneficiario">+ Agregar beneficiario</button>
+        </section>
+
+        <!-- PASO 7 — Declaración jurada y firma -->
+        <section class="step" data-step="6" hidden>
+          <div class="step-label">Paso 7 de 7</div>
+          <h2 class="step-title">Confirmá y firmá</h2>
+          <p class="step-help">Revisá que tus datos estén bien antes de firmar.</p>
+
+          <div class="summary-block">
+            <div class="summary-group">
+              <h4>Datos personales</h4>
+              <div class="summary-row"><span>Nombre</span><span id="sumNombre">—</span></div>
+              <div class="summary-row"><span>Cédula</span><span id="sumCedula">—</span></div>
+              <div class="summary-row"><span>Fecha de nacimiento</span><span id="sumFechaNacimiento">—</span></div>
+              <div class="summary-row"><span>Estado civil</span><span id="sumEstadoCivil">—</span></div>
+              <div class="summary-row"><span>Género</span><span id="sumGenero">—</span></div>
+            </div>
+
+            <div class="summary-group">
+              <h4>Contacto</h4>
+              <div class="summary-row"><span>Celular / WhatsApp</span><span id="sumCelular">—</span></div>
+              <div class="summary-row"><span>Correo</span><span id="sumCorreo">—</span></div>
+              <div class="summary-row"><span>Ciudad</span><span id="sumCiudad">—</span></div>
+              <div class="summary-row"><span>Dirección</span><span id="sumDireccion">—</span></div>
+            </div>
+
+            <div class="summary-group">
+              <h4>Actividad económica</h4>
+              <div class="summary-row"><span>Condición laboral</span><span id="sumCondicionLaboral">—</span></div>
+            </div>
+
+            <div class="summary-group">
+              <h4>Aportes y capital</h4>
+              <div class="summary-row"><span>Derecho de admisión (hoy)</span><span>Gs. 150.000</span></div>
+              <div class="summary-row"><span>Forma de pago</span><span id="sumFormaPago">—</span></div>
+              <div class="summary-row"><span>Adelanto de aporte (opcional)</span><span id="sumAporteInicial">—</span></div>
+            </div>
+
+            <div class="summary-group">
+              <h4>Socio referente</h4>
+              <div class="summary-row"><span>Referente</span><span id="sumReferente">—</span></div>
+            </div>
+
+            <div class="summary-group">
+              <h4>Beneficiarios</h4>
+              <div id="sumBeneficiarios"></div>
+            </div>
+          </div>
+
+          <a class="estatuto-link" href="estatuto-cimientos.html" target="_blank" rel="noopener">
+            <span class="estatuto-icon">📄</span>
+            <span class="estatuto-text">
+              <strong>Leé el Estatuto Social antes de firmar</strong>
+              <span>Los derechos, deberes y normas que aceptás al asociarte</span>
+            </span>
+            <span class="estatuto-go">Abrir ↗</span>
+          </a>
+
+          <div class="field">
+            <label class="choice" style="align-items:flex-start;">
+              <input type="checkbox" id="declaracion_jurada" required style="margin-top:3px;" />
+              <span id="declaracionText">Declaro bajo fe de juramento que los datos consignados son veraces y que los fondos provienen de actividades lícitas (SEPRELAD). Leí y acepto el Estatuto Social, y me comprometo a cumplir sus Reglamentos y resoluciones de la Cooperativa Cimientos Ltda., solicitando mi admisión como socio ordinario. *</span>
+            </label>
+          </div>
+
+          <div class="field">
+            <label>Firma del solicitante *</label>
+            <div class="signature-wrap">
+              <canvas id="signaturePad"></canvas>
+            </div>
+            <div class="signature-actions">
+              <span class="muted" id="signatureHint">Firmá con el dedo o el mouse dentro del recuadro</span>
+              <button type="button" id="clearSignature">Limpiar</button>
+            </div>
+          </div>
+
+          <div id="submitError" class="error-msg" hidden></div>
+
+          <button type="submit" class="btn btn-primary" id="submitBtn">
+            <span id="submitBtnLabel">Enviar solicitud</span>
+          </button>
+        </section>
+
+        <div class="draft-save-hint" id="draftSaveHint"><span class="dot"></span> Progreso guardado en este dispositivo</div>
+
+        <div class="btn-nav-row" id="navRow">
+          <button type="button" class="btn btn-ghost" id="prevBtn" hidden>Atrás</button>
+          <button type="button" class="btn btn-primary" id="nextBtn">Siguiente</button>
+        </div>
+
+      </form>
+    </div>
+
+    <p class="muted text-center mt-16">Cooperativa Multiactiva de Ahorro, Crédito, Construcción, Industria y Servicios Varios "Cimientos" Ltda.</p>
+  </div>
+
+  <!-- ===================== PANTALLA DE ÉXITO ===================== -->
+  <div id="successView" class="card" hidden>
+    <div class="success-screen">
+      <div class="success-icon">✓</div>
+      <h2 class="step-title" id="successTitle">¡Solicitud enviada!</h2>
+      <p class="step-help" id="successHelp">
+        Tu solicitud N° <strong id="successNumero">—</strong> fue recibida.
+        El Consejo de Administración la va a revisar en su próxima sesión y te contactamos
+        por WhatsApp o al correo que dejaste con el resultado.
+      </p>
+      <p class="muted" id="successRefHint">Guardá este número de solicitud como referencia.</p>
+      <p id="successCopyWrap"><button type="button" class="btn btn-ghost" id="copyRequestNumber">Copiar número de solicitud</button></p>
+    </div>
+  </div>
+</div>
+
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  // Supabase (opcional): mientras config.js tenga los valores de ejemplo
+  // "PONE_ACA_...", el formulario sigue guardando solo en este navegador,
+  // como siempre. Apenas config.js tenga la URL y la key reales, cada
+  // solicitud enviada también se guarda en la base de datos de Supabase.
+  const supabaseReady =
+    typeof SUPABASE_URL !== "undefined" &&
+    typeof SUPABASE_ANON_KEY !== "undefined" &&
+    SUPABASE_URL && SUPABASE_ANON_KEY &&
+    !String(SUPABASE_URL).startsWith("PONE_ACA") &&
+    !String(SUPABASE_ANON_KEY).startsWith("PONE_ACA");
+  const supabaseClient = supabaseReady && window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+
+  async function insertRemote(table, row) {
+    if (!supabaseClient) return null;
+    try {
+      const { data, error } = await supabaseClient.rpc("enviar_solicitud", { p_datos: row });
+      if (error) throw error;
+      return Array.isArray(data) ? data[0] : data;
+    } catch (err) {
+      console.error("Supabase (" + table + "):", err);
+      throw err;
+    }
+  }
+
+  const LOCAL_SOLICITUDES_KEY = "cimientos_local_v1_solicitudes";
+  const FECHA_CONSTITUCION = "2026-08-22";
+  const esFundador = new URLSearchParams(window.location.search).get("fundador") === "1";
+
+  // ---------------- Modo Socio Fundador ----------------
+  // Los socios fundadores ya integran la Cooperativa desde el Acta de la
+  // Asamblea Constitutiva (22/08/2026): no presentan una solicitud de
+  // admisión, así que no corresponde pedirles "Aportes y capital" (derecho
+  // de admisión) ni "Socio referente" (Art. 8° inc. e, excepción explícita
+  // para fundadores). Este link es solo para completar/actualizar sus datos.
+  if (esFundador) {
+    document.title = "Actualización de datos — Socio Fundador — Cooperativa Cimientos";
+    const tagline = document.getElementById("brandTagline");
+    if (tagline) tagline.textContent = "Actualización de datos — Socio Fundador";
+    const aportesStep = document.querySelector('.step[data-step="3"]');
+    const referenteStep = document.querySelector('.step[data-step="4"]');
+    if (aportesStep) aportesStep.remove();
+    if (referenteStep) referenteStep.remove();
+    const aportesSummary = document.getElementById("sumFormaPago");
+    const referenteSummary = document.getElementById("sumReferente");
+    if (aportesSummary && aportesSummary.closest(".summary-group")) aportesSummary.closest(".summary-group").remove();
+    if (referenteSummary && referenteSummary.closest(".summary-group")) referenteSummary.closest(".summary-group").remove();
+    const declaracionText = document.getElementById("declaracionText");
+    if (declaracionText) declaracionText.textContent = "Declaro bajo fe de juramento que los datos consignados son veraces y que los fondos provienen de actividades lícitas (SEPRELAD). Leí y acepto el Estatuto Social, y confirmo mis datos como Socio Fundador de la Cooperativa Cimientos Ltda., conforme al Acta de la Asamblea Constitutiva. *";
+  }
+
+  document.getElementById("copyRequestNumber").addEventListener("click", async () => {
+    const value = document.getElementById("successNumero").textContent.trim();
+    try { await navigator.clipboard.writeText(value); document.getElementById("copyRequestNumber").textContent = "Número copiado"; }
+    catch (_) { window.prompt("Copiá tu número de solicitud:", value); }
+  });
+
+  const steps = Array.from(document.querySelectorAll(".step"));
+  const totalSteps = steps.length;
+  const beneficiariosStepIndex = steps.findIndex((s) => s.querySelector("#beneficiariosList"));
+  let current = 0;
+  if (esFundador) {
+    steps.forEach((s, i) => { const label = s.querySelector(".step-label"); if (label) label.textContent = "Paso " + (i + 1) + " de " + totalSteps; });
+  }
+
+  const progressTrack = document.getElementById("progressTrack");
+  const prevBtn = document.getElementById("prevBtn");
+  const nextBtn = document.getElementById("nextBtn");
+  const submitBtn = document.getElementById("submitBtn");
+  const form = document.getElementById("wizardForm");
+
+  function renderProgress() {
+    progressTrack.innerHTML = "";
+    for (let i = 0; i < totalSteps; i++) {
+      const seg = document.createElement("div");
+      seg.className = "progress-seg" + (i < current ? " done" : i === current ? " active" : "");
+      progressTrack.appendChild(seg);
+    }
+  }
+
+  function showStep(index) {
+    steps.forEach((s, i) => (s.hidden = i !== index));
+    prevBtn.hidden = index === 0;
+    const isLast = index === totalSteps - 1;
+    nextBtn.hidden = isLast;
+    submitBtn.style.display = isLast ? "inline-flex" : "none";
+    if (isLast) {
+      fillSummary();
+      ensureCanvasSized();
+    }
+    if (index === beneficiariosStepIndex) renderBeneficiarios();
+    renderProgress();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function validateStep(index) {
+    const section = steps[index];
+    const inputs = section.querySelectorAll("input, select, textarea");
+    for (const el of inputs) {
+      if (!el.required) continue;
+      if (el.type === "radio") {
+        const group = section.querySelectorAll('input[name="' + el.name + '"]');
+        const checked = Array.from(group).some((r) => r.checked);
+        if (!checked) {
+          alert("Completá: " + (el.closest(".field") ? el.closest(".field").querySelector("label").innerText : "un campo requerido"));
+          return false;
+        }
+        continue;
+      }
+      if (el.type === "checkbox") {
+        if (!el.checked) {
+          alert("Tenés que aceptar la declaración jurada para continuar.");
+          return false;
+        }
+        continue;
+      }
+      if (!el.value || !el.value.trim()) {
+        el.focus();
+        return false;
+      }
+    }
+    if (index === 0) {
+      const fecha = document.getElementById("fecha_nacimiento").value;
+      if (fecha) {
+        const edad = calcularEdad(fecha);
+        if (edad < 18) {
+          alert("Según el Estatuto (Art. 8°), hay que ser mayor de 18 años para asociarse.");
+          return false;
+        }
+      }
+    }
+    return true;
+  }
+
+  function calcularEdad(fechaStr) {
+    const hoy = new Date();
+    const nac = new Date(fechaStr);
+    let edad = hoy.getFullYear() - nac.getFullYear();
+    const m = hoy.getMonth() - nac.getMonth();
+    if (m < 0 || (m === 0 && hoy.getDate() < nac.getDate())) edad--;
+    return edad;
+  }
+
+  nextBtn.addEventListener("click", () => {
+    if (!validateStep(current)) return;
+    if (current < totalSteps - 1) {
+      current++;
+      showStep(current);
+    }
+  });
+
+  prevBtn.addEventListener("click", () => {
+    if (current > 0) {
+      current--;
+      showStep(current);
+    }
+  });
+
+  function formatGs(n) {
+    if (!n && n !== 0) return "—";
+    return "Gs. " + Number(n).toLocaleString("es-PY");
+  }
+
+  function formatFecha(fechaStr) {
+    if (!fechaStr) return "—";
+    const [y, m, d] = fechaStr.split("-");
+    return d && m && y ? d + "/" + m + "/" + y : fechaStr;
+  }
+
+  function setText(id, text) { const el = document.getElementById(id); if (el) el.innerText = text; }
+
+  function fillSummary() {
+    setText("sumNombre", val("apellidos_nombres") || "—");
+    setText("sumCedula", val("cedula") || "—");
+    setText("sumFechaNacimiento", formatFecha(val("fecha_nacimiento")));
+    setText("sumEstadoCivil", val("estado_civil") || "—");
+    setText("sumGenero", radioVal("genero") || "—");
+
+    setText("sumCelular", val("celular_whatsapp") || "—");
+    setText("sumCorreo", val("correo_electronico") || "—");
+    setText("sumCiudad", val("ciudad") || "—");
+    const direccionTxt = [val("direccion"), val("barrio")].filter(Boolean).join(", ");
+    setText("sumDireccion", direccionTxt || "—");
+
+    setText("sumCondicionLaboral", radioVal("condicion_laboral") || "—");
+
+    setText("sumAporteInicial", val("monto_aporte_inicial") ? formatGs(val("monto_aporte_inicial")) : "—");
+    setText("sumFormaPago", radioVal("forma_pago") || "—");
+
+    const refNombre = val("referente_nombre");
+    setText("sumReferente", refNombre ? refNombre : "Lo asigna el Consejo");
+
+    const sumBenef = document.getElementById("sumBeneficiarios");
+    const nombrados = beneficiarios.filter((b) => b.nombre && b.nombre.trim());
+    if (nombrados.length === 0) {
+      sumBenef.innerHTML = '<div class="summary-empty">No agregaste beneficiarios</div>';
+    } else {
+      sumBenef.innerHTML = nombrados
+        .map(
+          (b) =>
+            '<div class="summary-row"><span>' +
+            escapeHtml(b.nombre) +
+            (b.parentesco ? " (" + escapeHtml(b.parentesco) + ")" : "") +
+            "</span><span>" +
+            (b.porcentaje ? b.porcentaje + "%" : "—") +
+            "</span></div>"
+        )
+        .join("");
+    }
+  }
+
+  function escapeHtml(str) {
+    const d = document.createElement("div");
+    d.innerText = str;
+    return d.innerHTML;
+  }
+
+  function val(id) {
+    const el = document.getElementById(id);
+    return el ? el.value : "";
+  }
+
+  function radioVal(name) {
+    const el = document.querySelector('input[name="' + name + '"]:checked');
+    return el ? el.value : null;
+  }
+
+  // ---------------- Beneficiarios dinámicos ----------------
+  let beneficiarios = [];
+
+  function renderBeneficiarios() {
+    const list = document.getElementById("beneficiariosList");
+    list.innerHTML = "";
+    beneficiarios.forEach((b, idx) => {
+      const row = document.createElement("div");
+      row.className = "beneficiario-row";
+      row.innerHTML =
+        '<button type="button" class="remove-btn" data-idx="' + idx + '">Quitar</button>' +
+        '<div class="row2">' +
+        '<div class="field"><label>Nombre y Apellido</label><input type="text" data-field="nombre" data-idx="' + idx + '" value="' + (b.nombre || "").replace(/"/g, "&quot;") + '" /></div>' +
+        '<div class="field"><label>Cédula N°</label><input type="text" inputmode="numeric" data-field="cedula" data-idx="' + idx + '" value="' + (b.cedula || "").replace(/"/g, "&quot;") + '" /></div>' +
+        "</div>" +
+        '<div class="row2">' +
+        '<div class="field"><label>Parentesco</label><input type="text" data-field="parentesco" data-idx="' + idx + '" value="' + (b.parentesco || "").replace(/"/g, "&quot;") + '" /></div>' +
+        '<div class="field"><label>%</label><input type="number" min="0" max="100" data-field="porcentaje" data-idx="' + idx + '" value="' + (b.porcentaje || "") + '" /></div>' +
+        "</div>";
+      list.appendChild(row);
+    });
+
+    list.querySelectorAll("input").forEach((inp) => {
+      inp.addEventListener("input", (e) => {
+        const idx = Number(e.target.dataset.idx);
+        const field = e.target.dataset.field;
+        beneficiarios[idx][field] = e.target.value;
+      });
+    });
+
+    list.querySelectorAll(".remove-btn").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        const idx = Number(e.target.dataset.idx);
+        beneficiarios.splice(idx, 1);
+        renderBeneficiarios();
+      });
+    });
+  }
+
+  document.getElementById("addBeneficiario").addEventListener("click", () => {
+    beneficiarios.push({ nombre: "", cedula: "", parentesco: "", porcentaje: "" });
+    renderBeneficiarios();
+  });
+
+  // ---------------- Borrador (localStorage) ----------------
+  const DRAFT_KEY = esFundador ? "cimientos_fundador_draft" : "cimientos_solicitud_draft";
+  const draftFieldIds = [
+    "apellidos_nombres", "cedula", "fecha_nacimiento", "nacionalidad", "estado_civil",
+    "profesion_oficio", "ciudad", "barrio", "departamento", "tipo_vivienda", "direccion", "celular_whatsapp",
+    "correo_electronico", "empresa_ruc", "cargo_laboral", "antiguedad_laboral", "direccion_laboral", "origen_fondos", "cuotas_partes_suscriptas",
+    "monto_aporte_inicial", "referente_nombre", "referente_cedula",
+  ];
+  const draftRadioNames = ["genero", "contacto_preferido", "condicion_laboral", "cargo_publico", "trabajo_ong", "forma_pago"];
+
+  function collectDraft() {
+    const data = { step: current, fields: {}, radios: {}, beneficiarios: beneficiarios };
+    draftFieldIds.forEach((id) => (data.fields[id] = val(id)));
+    draftRadioNames.forEach((name) => (data.radios[name] = radioVal(name)));
+    return data;
+  }
+
+  function applyDraft(data) {
+    draftFieldIds.forEach((id) => {
+      const el = document.getElementById(id);
+      if (el && data.fields && data.fields[id] !== undefined) el.value = data.fields[id];
+    });
+    draftRadioNames.forEach((name) => {
+      const value = data.radios && data.radios[name];
+      if (!value) return;
+      const el = document.querySelector('input[name="' + name + '"][value="' + value + '"]');
+      if (el) el.checked = true;
+    });
+    if (data.beneficiarios && Array.isArray(data.beneficiarios)) {
+      beneficiarios = data.beneficiarios;
+      renderBeneficiarios();
+    }
+    current = Math.min(data.step || 0, totalSteps - 1);
+    showStep(current);
+  }
+
+  function loadRawDraft() {
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function clearDraft() {
+    try {
+      localStorage.removeItem(DRAFT_KEY);
+    } catch (e) {
+      /* localStorage no disponible: nada que limpiar */
+    }
+  }
+
+  const saveHint = document.getElementById("draftSaveHint");
+  let saveHintTimer = null;
+  function flashSaveHint() {
+    if (!saveHint) return;
+    saveHint.classList.add("show");
+    clearTimeout(saveHintTimer);
+    saveHintTimer = setTimeout(() => saveHint.classList.remove("show"), 1400);
+  }
+
+  let saveDraftTimer = null;
+  function scheduleSaveDraft() {
+    clearTimeout(saveDraftTimer);
+    saveDraftTimer = setTimeout(() => {
+      try {
+        localStorage.setItem(DRAFT_KEY, JSON.stringify(collectDraft()));
+        flashSaveHint();
+      } catch (e) {
+        /* modo privado u otra restricción: seguimos sin guardar borrador */
+      }
+    }, 500);
+  }
+
+  form.addEventListener("input", scheduleSaveDraft);
+  form.addEventListener("change", scheduleSaveDraft);
+
+  const draftBanner = document.getElementById("draftBanner");
+  const draftContinueBtn = document.getElementById("draftContinue");
+  const draftDiscardBtn = document.getElementById("draftDiscard");
+  if (draftContinueBtn) {
+    draftContinueBtn.addEventListener("click", () => {
+      draftBanner.hidden = true;
+      const raw = loadRawDraft();
+      if (raw) applyDraft(raw);
+    });
+  }
+  if (draftDiscardBtn) {
+    draftDiscardBtn.addEventListener("click", () => {
+      clearDraft();
+      draftBanner.hidden = true;
+    });
+  }
+
+  (function checkForDraft() {
+    const existing = loadRawDraft();
+    if (!draftBanner || !existing) return;
+    const hasContent = existing.fields && (existing.fields.apellidos_nombres || existing.fields.cedula);
+    if (hasContent) draftBanner.hidden = false;
+  })();
+
+  // Si llegaste con un link de pre-registro (compartido desde el panel del
+  // Consejo), prellenamos nombre y celular — pero nunca pisamos un borrador
+  // propio que ya tenga contenido.
+  (function prefillFromLink() {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const nombre = params.get("nombre");
+      const celular = params.get("celular");
+      if (!nombre && !celular) return;
+      const existing = loadRawDraft();
+      const hasOwnContent = existing && existing.fields && (existing.fields.apellidos_nombres || existing.fields.cedula);
+      if (hasOwnContent) return;
+      if (nombre) document.getElementById("apellidos_nombres").value = nombre;
+      if (celular) document.getElementById("celular_whatsapp").value = celular;
+    } catch (e) {
+      /* URL inválida o localStorage no disponible: seguimos sin prellenar */
+    }
+  })();
+
+  // ---------------- Firma digital ----------------
+  const canvas = document.getElementById("signaturePad");
+  const ctx = canvas.getContext("2d");
+  let drawing = false;
+  let hasSignature = false;
+
+  let canvasSized = false;
+  function doResizeCanvas() {
+    const rect = canvas.getBoundingClientRect();
+    if (rect.width === 0) return false; // step is hidden right now, try again later
+    const ratio = Math.max(window.devicePixelRatio || 1, 1);
+    const data = hasSignature ? canvas.toDataURL() : null;
+    canvas.width = rect.width * ratio;
+    canvas.height = 180 * ratio;
+    ctx.scale(ratio, ratio);
+    ctx.lineWidth = 2.2;
+    ctx.lineCap = "round";
+    ctx.strokeStyle = "#2e2e2e";
+    if (data) {
+      const img = new Image();
+      img.onload = () => ctx.drawImage(img, 0, 0, rect.width, 180);
+      img.src = data;
+    }
+    canvasSized = true;
+    return true;
+  }
+  // The signature step starts hidden, so the canvas has no real size until
+  // that step is actually shown — call this each time step 7 opens.
+  function ensureCanvasSized() {
+    if (!canvasSized) doResizeCanvas();
+  }
+  window.addEventListener("resize", doResizeCanvas);
+  doResizeCanvas();
+
+  function getPos(e) {
+    const rect = canvas.getBoundingClientRect();
+    const point = e.touches ? e.touches[0] : e;
+    return { x: point.clientX - rect.left, y: point.clientY - rect.top };
+  }
+
+  function startDraw(e) {
+    e.preventDefault();
+    drawing = true;
+    hasSignature = true;
+    const p = getPos(e);
+    ctx.beginPath();
+    ctx.moveTo(p.x, p.y);
+  }
+  function moveDraw(e) {
+    if (!drawing) return;
+    e.preventDefault();
+    const p = getPos(e);
+    ctx.lineTo(p.x, p.y);
+    ctx.stroke();
+  }
+  function endDraw() {
+    drawing = false;
+  }
+
+  canvas.addEventListener("mousedown", startDraw);
+  canvas.addEventListener("mousemove", moveDraw);
+  window.addEventListener("mouseup", endDraw);
+  canvas.addEventListener("touchstart", startDraw, { passive: false });
+  canvas.addEventListener("touchmove", moveDraw, { passive: false });
+  canvas.addEventListener("touchend", endDraw);
+
+  document.getElementById("clearSignature").addEventListener("click", () => {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    hasSignature = false;
+  });
+
+  // ---------------- Envío ----------------
+  const errorBox = document.getElementById("submitError");
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (!validateStep(current)) return;
+
+    if (!hasSignature) {
+      showError("Falta tu firma para poder enviar la solicitud.");
+      return;
+    }
+
+    submitBtn.disabled = true;
+    document.getElementById("submitBtnLabel").innerHTML = '<span class="spinner"></span>';
+    errorBox.hidden = true;
+
+    const payload = {
+      apellidos_nombres: val("apellidos_nombres"),
+      nacionalidad: val("nacionalidad"),
+      estado_civil: val("estado_civil"),
+      cedula: val("cedula"),
+      fecha_nacimiento: val("fecha_nacimiento"),
+      profesion_oficio: val("profesion_oficio"),
+      genero: radioVal("genero"),
+      ciudad: val("ciudad"),
+      barrio: val("barrio"),
+      departamento: val("departamento"),
+      tipo_vivienda: val("tipo_vivienda"),
+      direccion: val("direccion"),
+      celular_whatsapp: val("celular_whatsapp"),
+      correo_electronico: val("correo_electronico"),
+      contacto_preferido: radioVal("contacto_preferido"),
+      condicion_laboral: radioVal("condicion_laboral"),
+      empresa_ruc: val("empresa_ruc"),
+      cargo_laboral: val("cargo_laboral"),
+      antiguedad_laboral: val("antiguedad_laboral"),
+      direccion_laboral: val("direccion_laboral"),
+      cargo_publico: radioVal("cargo_publico"),
+      trabajo_ong: radioVal("trabajo_ong"),
+      origen_fondos: val("origen_fondos"),
+      cuotas_partes_suscriptas: val("cuotas_partes_suscriptas") ? Number(val("cuotas_partes_suscriptas")) : null,
+      monto_aporte_inicial: val("monto_aporte_inicial") ? Number(val("monto_aporte_inicial")) : null,
+      forma_pago: radioVal("forma_pago"),
+      referente_nombre: val("referente_nombre"),
+      referente_cedula: val("referente_cedula"),
+      beneficiarios: beneficiarios.filter((b) => b.nombre && b.nombre.trim()),
+      declaracion_jurada: document.getElementById("declaracion_jurada").checked,
+      firma_base64: canvas.toDataURL("image/png"),
+      tipo_socio: esFundador ? "fundador" : "ordinario",
+    };
+
+    try {
+      const solicitudes = supabaseReady ? [] : JSON.parse(localStorage.getItem(LOCAL_SOLICITUDES_KEY) || "[]");
+
+      if (esFundador) {
+        if (supabaseReady) throw new Error("La carga de socios fundadores requiere ingresar desde el panel administrativo.");
+        payload.numero_socio = null;
+        payload.estado = "aprobado";
+        payload.datos_pendiente_revision = true;
+        payload.fecha_constitucion = FECHA_CONSTITUCION;
+        payload.resolucion_numero = null;
+        payload.revisado_por = null;
+        payload.fecha_revision = null;
+        payload.notas_admin = null;
+        // Si ya había un registro de este fundador (p. ej. reenvió el link
+        // porque se equivocó en algo), actualizamos en vez de duplicar.
+        const existenteIdx = solicitudes.findIndex((x) => x.tipo_socio === "fundador" && x.cedula && payload.cedula && x.cedula === payload.cedula);
+        if (existenteIdx >= 0) {
+          payload.id = solicitudes[existenteIdx].id;
+          payload.numero_socio = solicitudes[existenteIdx].numero_socio || null;
+          payload.created_at = solicitudes[existenteIdx].created_at || new Date().toISOString();
+          solicitudes[existenteIdx] = Object.assign({}, solicitudes[existenteIdx], payload);
+        } else {
+          payload.id = "fund-" + Date.now();
+          payload.created_at = new Date().toISOString();
+          solicitudes.push(payload);
+        }
+        localStorage.setItem(LOCAL_SOLICITUDES_KEY, JSON.stringify(solicitudes));
+        document.getElementById("successTitle").textContent = "¡Datos recibidos!";
+        document.getElementById("successHelp").innerHTML = "Gracias, " + escapeHtml(val("apellidos_nombres") || "") + ". Recibimos tus datos como <strong>Socio Fundador</strong>. El equipo administrativo los va a confirmar en el Libro de Socios.";
+        document.getElementById("successRefHint").hidden = true;
+        document.getElementById("successCopyWrap").hidden = true;
+      } else {
+        const numeroSolicitud = solicitudes.reduce((max, item) => Math.max(max, Number(item.numero_solicitud) || 0), 0) + 1;
+        if (supabaseReady) {
+          const result = await insertRemote("solicitudes_socios", payload);
+          document.getElementById("successNumero").innerText = result && result.referencia ? result.referencia : "RECIBIDA";
+        } else {
+          payload.id = "local-" + Date.now();
+          payload.numero_solicitud = numeroSolicitud;
+          payload.estado = "pendiente";
+          payload.created_at = new Date().toISOString();
+          solicitudes.push(payload);
+          localStorage.setItem(LOCAL_SOLICITUDES_KEY, JSON.stringify(solicitudes));
+          document.getElementById("successNumero").innerText = "LOCAL-" + String(numeroSolicitud).padStart(4, "0");
+        }
+      }
+
+      document.getElementById("formView").hidden = true;
+      document.getElementById("successView").hidden = false;
+      clearDraft();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } catch (err) {
+      console.error(err);
+      showError(err && err.message ? err.message : "No pudimos enviar la solicitud. Intentá nuevamente.");
+      submitBtn.disabled = false;
+      document.getElementById("submitBtnLabel").innerText = "Enviar solicitud";
+    }
+  });
+
+  function showError(msg) {
+    errorBox.innerText = msg;
+    errorBox.hidden = false;
+    errorBox.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+
+  showStep(0);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,755 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Estatuto Social — Cooperativa Cimientos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="fonts.css" />
+<style>
+  :root {
+    --charcoal: #2e2e2e;
+    --green: #6a9c20;
+    --green-dark: #557d19;
+    --orange: #ff7a00;
+    --orange-light: #ffb100;
+    --cream: #f6f6f4;
+    --paper: #ffffff;
+    --ink: #2e2e2e;
+    --ink-soft: #6b6b66;
+    --line: #e6e4dd;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--cream);
+    color: var(--ink);
+    font-family: "Nunito Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    background: var(--paper);
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 18px;
+  }
+  .brand-mark {
+    width: 34px;
+    height: 34px;
+    border-radius: 9px;
+    background: linear-gradient(145deg, var(--green), var(--green-dark));
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+  .brand-text { display: flex; flex-direction: column; line-height: 1.15; }
+  .brand-text strong { font-size: 13.5px; }
+  .brand-text span { font-size: 11.5px; color: var(--ink-soft); }
+  .topbar-actions { margin-left: auto; display: flex; gap: 8px; }
+  .topbar-actions a, .topbar-actions button {
+    font-family: inherit;
+    font-size: 12.5px;
+    font-weight: 600;
+    border-radius: 8px;
+    padding: 8px 12px;
+    text-decoration: none;
+    border: 1px solid var(--line);
+    background: var(--paper);
+    color: var(--charcoal);
+    cursor: pointer;
+  }
+  .topbar-actions .btn-primary {
+    background: var(--green);
+    border-color: var(--green);
+    color: #fff;
+  }
+
+  .page-header {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 40px 20px 8px;
+  }
+  .eyebrow {
+    font-size: 11.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--green);
+    font-weight: 700;
+    margin: 0 0 10px;
+  }
+  .page-header h1 {
+    font-family: "Source Serif 4", Georgia, serif;
+    font-size: clamp(26px, 4vw, 36px);
+    line-height: 1.15;
+    margin: 0 0 10px;
+  }
+  .page-header p {
+    color: var(--ink-soft);
+    font-size: 14.5px;
+    line-height: 1.6;
+    max-width: 60ch;
+    margin: 0 0 4px;
+  }
+  .constitution-note {
+    display: inline-flex;
+    gap: 8px;
+    align-items: baseline;
+    font-size: 12.5px;
+    color: var(--ink-soft);
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 8px 12px;
+    margin-top: 14px;
+  }
+
+  .toc-wrap {
+    max-width: 760px;
+    margin: 22px auto 10px;
+    padding: 0 20px;
+  }
+  .toc {
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 8px;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+  .toc a {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    text-decoration: none;
+    color: var(--charcoal);
+    padding: 9px 10px;
+    border-radius: 9px;
+    font-size: 13.5px;
+  }
+  .toc a:hover { background: var(--cream); }
+  .toc-num {
+    font-weight: 800;
+    color: var(--green);
+    font-size: 12px;
+    min-width: 22px;
+  }
+  .toc-title { line-height: 1.3; }
+
+  main {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 20px 20px 90px;
+  }
+
+  .capitulo { margin-top: 40px; padding-top: 18px; border-top: 2px solid var(--charcoal); }
+  .capitulo:first-of-type { margin-top: 28px; }
+  .capitulo-head { margin-bottom: 18px; }
+  .capitulo-num {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #fff;
+    background: var(--charcoal);
+    border-radius: 999px;
+    padding: 4px 11px;
+    margin-bottom: 8px;
+  }
+  .capitulo-head h2 {
+    font-family: "Source Serif 4", Georgia, serif;
+    font-size: 22px;
+    margin: 0;
+    line-height: 1.3;
+  }
+
+  .seccion-head {
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--green-dark);
+    border-left: 3px solid var(--green);
+    padding-left: 10px;
+    margin: 28px 0 14px;
+  }
+  .sub-head {
+    font-size: 14.5px;
+    font-weight: 700;
+    color: var(--charcoal);
+    margin: 20px 0 8px;
+  }
+
+  .articulo {
+    padding: 14px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .articulo:last-child { border-bottom: none; }
+  .articulo p {
+    font-size: 14.5px;
+    line-height: 1.68;
+    margin: 0 0 10px;
+    color: var(--charcoal);
+  }
+  .art-lead .art-num {
+    font-weight: 800;
+    color: var(--green-dark);
+  }
+  .articulo ul {
+    margin: 0 0 12px;
+    padding-left: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .articulo li {
+    font-size: 14px;
+    line-height: 1.62;
+    color: var(--charcoal);
+  }
+
+  .doc-footer {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 10px 20px 60px;
+    color: var(--ink-soft);
+    font-size: 12.5px;
+    line-height: 1.6;
+    text-align: center;
+  }
+
+  .back-to-top {
+    position: fixed;
+    right: 18px;
+    bottom: 18px;
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: var(--charcoal);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    font-size: 16px;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.18);
+    opacity: 0.88;
+  }
+
+  @media print {
+    .topbar, .back-to-top, .toc-wrap { display: none !important; }
+    html, body { background: #fff; }
+    main { max-width: none; padding: 0; }
+    .page-header { max-width: none; padding: 0 0 12px; }
+    .capitulo { page-break-before: auto; border-top-color: #000; }
+    .articulo { break-inside: avoid; }
+    a { color: inherit; text-decoration: none; }
+  }
+
+  /* Experiencia iOS / Cimientos */
+  body { background:radial-gradient(circle at 88% 0,rgba(106,156,32,.12),transparent 30%),var(--cream); }
+  .topbar {
+    background:rgba(249,250,247,.84);
+    border-bottom-color:rgba(46,46,46,.08);
+    backdrop-filter:blur(24px) saturate(150%);
+    -webkit-backdrop-filter:blur(24px) saturate(150%);
+    padding:10px max(16px,calc((100vw - 900px)/2));
+  }
+  .brand-mark { border-radius:13px; box-shadow:0 8px 20px rgba(106,156,32,.24); }
+  .topbar-actions a,.topbar-actions button { border-radius:12px; border-color:rgba(46,46,46,.09); background:rgba(255,255,255,.8); }
+  .page-header { padding-top:50px; }
+  .page-header h1 { letter-spacing:-.025em; }
+  .toc-wrap {
+    background:rgba(255,255,255,.88);
+    border:1px solid rgba(46,46,46,.08);
+    border-radius:24px;
+    box-shadow:0 18px 55px rgba(32,33,36,.07);
+    backdrop-filter:blur(18px);
+  }
+  .toc a { border-radius:14px; transition:background .18s,transform .18s; }
+  .toc a:hover { background:rgba(106,156,32,.08); transform:translateX(2px); }
+  .articulo {
+    background:rgba(255,255,255,.72);
+    border:1px solid rgba(46,46,46,.07);
+    border-radius:18px;
+    padding:18px 20px;
+    margin-bottom:12px;
+  }
+  .back-to-top { background:var(--green); box-shadow:0 10px 28px rgba(106,156,32,.28); }
+  @media(max-width:620px){
+    .topbar{padding:9px 11px}.brand-text span{display:none}.topbar-actions{gap:5px}.topbar-actions a,.topbar-actions button{font-size:10px;padding:8px}.page-header{padding-top:30px}.articulo{padding:16px 15px;border-radius:16px}
+  }
+.statute-search{position:sticky;top:78px;z-index:5;display:flex;align-items:center;gap:12px;margin:0 0 24px;padding:10px;border:1px solid rgba(32,33,36,.08);border-radius:18px;background:rgba(255,255,255,.88);backdrop-filter:blur(22px);box-shadow:0 12px 35px rgba(32,33,36,.08)}.statute-search input{flex:1;border:0;outline:0;background:transparent;padding:7px 10px;font:inherit}.statute-search span{color:#6a9c20;font-size:12px;font-weight:750;white-space:nowrap}.toc a:nth-child(4n+2) .toc-num{background:#eaf2ff;color:#3478f6}.toc a:nth-child(4n+3) .toc-num{background:#fff0df;color:#e56f00}.toc a:nth-child(4n+4) .toc-num{background:#f1e9fb;color:#8652c8}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand-mark">C</div>
+  <div class="brand-text">
+    <strong>Cooperativa Cimientos Ltda.</strong>
+    <span>Estatuto Social</span>
+  </div>
+  <div class="topbar-actions">
+    <button type="button" onclick="window.print()">Imprimir / Guardar PDF</button>
+    <a href="formulario.html">← Volver al formulario</a>
+  </div>
+</div>
+
+<div class="page-header">
+  <p class="eyebrow">Documento oficial</p>
+  <h1>Estatuto Social de Cooperativa Cimientos Ltda.</h1>
+  <p>Cooperativa Multiactiva de Ahorro, Crédito, Construcción, Industria y Servicios Varios "Cimientos" Limitada. Este es el texto completo que aceptás al presentar tu solicitud de admisión como socio.</p>
+  <div class="constitution-note">📍 Constituida el 22 de agosto de 2026 en Fernando de la Mora, Departamento Central — Paraguay, bajo la Ley N° 438/94 y modificatorias.</div>
+</div>
+
+<div class="toc-wrap">
+  <div class="toc">
+    <a href="#cap-I"><span class="toc-num">I</span><span class="toc-title">De la constitución, denominación, duración y domicilio.</span></a>
+<a href="#cap-II"><span class="toc-num">II</span><span class="toc-title">De sus fines, objetivos y principios</span></a>
+<a href="#cap-III"><span class="toc-num">III</span><span class="toc-title">De los socios</span></a>
+<a href="#cap-IV"><span class="toc-num">IV</span><span class="toc-title">Del régimen económico</span></a>
+<a href="#cap-V"><span class="toc-num">V</span><span class="toc-title">Del registro de actividades</span></a>
+<a href="#cap-VI"><span class="toc-num">VI</span><span class="toc-title">De las autoridades</span></a>
+<a href="#cap-VII"><span class="toc-num">VII</span><span class="toc-title">Del régimen de servicios</span></a>
+<a href="#cap-VIII"><span class="toc-num">VIII</span><span class="toc-title">Del régimen disciplinario</span></a>
+<a href="#cap-IX"><span class="toc-num">IX</span><span class="toc-title">De la disolución y liquidación</span></a>
+<a href="#cap-X"><span class="toc-num">X</span><span class="toc-title">De las disposiciones generales, transitorias y finales</span></a>
+  </div>
+</div>
+
+<main>
+  <div class="statute-search"><input id="statuteSearch" type="search" placeholder="Buscar artículo o palabra en el estatuto…" aria-label="Buscar en el estatuto"><span id="searchCount"></span></div>
+  <section class="capitulo" id="cap-I">
+<div class="capitulo-head"><span class="capitulo-num">Capítulo I</span><h2>De la constitución, denominación, duración y domicilio.</h2></div>
+<div class="capitulo-body">
+<article class="articulo" id="art-1">
+<p class="art-lead"><span class="art-num">Art. 1°.</span> Constitución y Denominación. En la Ciudad de Fernando de la Mora, Departamento Central de la República del Paraguay, a los 22 días del mes de Agosto de 2026, queda constituida la “Cooperativa Multiactiva de Ahorro, Crédito, Construcción, Industria y Servicios Varios Cimientos Limitada”, pudiendo utilizar las siglas “CIMIENTOS LTDA.”, que se regirá por este Estatuto y por las disposiciones legales contenidas en la Ley N° 438 del 21 de octubre de 1994 y sus leyes modificatorias (incluyendo la Ley N° 5.501/15), y su Decreto Reglamentario N°14.052 del 3 de julio de 1996, los que en adelante en este cuerpo de normas se aludirán con las Frases “LA LEY Y “EL REGLAMENTO” respectivamente.</p>
+</article>
+<article class="articulo" id="art-2">
+<p class="art-lead"><span class="art-num">Art. 2°.</span> Duración. La duración de la Cooperativa será por tiempo indefinido, no obstante podrá disolverse con arreglo a LA LEY Y EL REGLAMENTO.</p>
+</article>
+<article class="articulo" id="art-3">
+<p class="art-lead"><span class="art-num">Art. 3°.</span> Domicilio Real. El domicilio real de la cooperativa queda fijado en la Ciudad de Fernando de la Mora, Departamento Central, República del Paraguay, pudiendo sin embargo instalar sucursales, oficinas o puestos de servicios en cualquier lugar del Territorio Nacional.</p>
+</article>
+</div>
+<section class="capitulo" id="cap-II">
+<div class="capitulo-head"><span class="capitulo-num">Capítulo II</span><h2>De sus fines, objetivos y principios</h2></div>
+<div class="capitulo-body">
+<article class="articulo" id="art-4">
+<p class="art-lead"><span class="art-num">Art. 4°.</span> Fines. La Cooperativa persigue los siguientes fines:</p>
+<ul><li>Promover la cooperación para el mejoramiento de la condición social, cultural, económica y moral de los asociados.</li><li>Fomentar y estimular la práctica del ahorro y el buen uso del crédito.</li><li>Desarrollar políticas de cooperación y de asistencia con otras Cooperativas.</li><li>Colaborar con los organismos oficiales o privados en todo cuanto redunde en beneficio de la economía nacional.</li><li>Fomentar la conciencia de la solidaridad entre los asociados.</li><li>Instruir a los socios en los aspectos económicos, sociales, culturales y morales.</li><li>Para la Importación y Logística: Actuar como canal de gestión y operador logístico integral para adquirir, intermediar e importar de forma directa del exterior o del mercado nacional, ya sea por cuenta propia o por cuenta y orden de sus asociados, maquinarias en general (pesadas, livianas y de uso industrial), equipos tecnológicos, vehículos, repuestos, herramientas, materias primas, materiales de construcción, insumos de ferreterías y cualquier otro bien licito o servicio necesario para el desarrollo de las actividades productivas de los socios o de la cooperativa; quedando facultada para coordinar el transporte internacional, almacenamiento, despacho aduanero y distribución de los mismos.</li><li>Para abaratar costos e implementos de los socios: Promover la economía de escala mediante la compra conjunta y distribución a precio de costo de implementos de trabajo, equipos de protección individual (EPI), materiales y herramientas para los asociados, optimizando sus costos operativos y garantizando ventajas competitivas en el mercado bajo el amparo del acto cooperativo.</li><li>Para las Licitaciones con el Estado: Participar, ya sea de forma individual, en consorcio o en llamados a licitaciones públicas y privadas, concursos de ofertas y contrataciones convocadas por el Estado paraguayo, ministerios, gobernaciones, municipalidades y entidades binacionales, para la ejecución de obras civiles, viales e industriales y la provisión de servicios varios de conformidad con lo establecido en la Ley N° 7.021/22 de Contrataciones Publicas y sus reglamentaciones vigentes.</li><li>Prestar a sus socios, durante su existencia física o jurídica y en su deceso, los distintos servicios emergentes de la solidaridad y actos cooperativos.</li><li>Para los Servicios Profesionales y Varios: Ofrecer un portafolio multidisciplinario de servicios profesionales, técnicos y de consultoría en las áreas de ingeniería, arquitectura, diseño, fiscalización de obras, gestión ambiental, administración y servicios provisionales de mantenimiento industrial.</li></ul>
+</article>
+<article class="articulo" id="art-5">
+<p class="art-lead"><span class="art-num">Art. 5°.</span> Objetivos. Para el cumplimiento de estos fines y objetivos la cooperativa tendrá por objeto:</p>
+<ul><li>Fomentar y estimular la práctica del ahorro entre los socios.</li><li>Facilitar recursos financieros a socios y grupos de socios para el fomento de actividades y de proyectos específicos.</li><li>Otorgar préstamos a los socios a intereses razonables para fines útiles, productivos y para casos de emergencia.</li><li>Recibir las aportaciones y/o depósitos en cuentas de Ahorro a la Vista y a Plazo Fijo.</li><li>Habilitar un Departamento de Consumo y Servicios, siempre que el funcionamiento de los mismos se ajuste a las disposiciones de la Ley.</li><li>Organizar Departamentos Técnicos y Administrativos para cada actividad que incorpore, conforme con lo dispuesto en el Art. N° 102 de la Ley sobre Cooperativas Multiactivas.</li><li>Facilitar una adecuada formación intelectual a sus miembros mediante una apropiada Educación Cooperativa.</li><li>Producir o transformar por cuenta propia o por cuenta de sus asociados bienes materiales y servicios para el mejor logro de los fines y objetivos de los mismos.</li><li>Establecer y prestar a sus asociados todos los servicios de exportación e importación de productos primarios industrializados, maquinarias pesadas y agrícolas.</li><li>Comprar y vender en las condiciones económicas más ventajosas posibles todos los bienes muebles, inmuebles, maquinarias, herramientas, repuestos, rodados, accesorios y otros bienes necesarios para su propio uso o para la actividad específica de los asociados.</li><li>Suministrar a los socios mercaderías para su uso personal doméstico o para el de su actividad profesional.</li><li>Producir de forma directa o por el trabajo de sus socios toda clase de bienes para su comercialización en los mercados nacionales y/o extranjeros.</li><li>Proveer a sus asociados todos los insumos, materias primas, herramientas y consumibles necesarios para el desarrollo de sus actividades productivas, industriales, comerciales y de construcción en general. Esto comprende la adquisición, importación, provisión o alquiler de maquinarias pesada, liviana, elementos de transporte y útiles de trabajo; el suministro de materiales de construcción, ferretería e insumos industriales de cualquier índole; así como la gestión, asesoramiento y ejecución de proyectos inmobiliarios, obras civiles y servicios profesionales de ingeniería y arquitectura. Así mismo, se incluye la construcción de viviendas, atención de Salud, educación alternativa, asistencia funeraria y demás servicio de bienestar, de conformidad a las leyes pertinentes. Toda enumeración de los incisos precedentes es meramente enunciativa, pudiendo la Cooperativa realizar cuantos actos sean necesarios y que guarden relación con los fines y objetivos enunciados en este Estatuto. Queda expresamente autorizada para crear y operar unidades productivas destinadas a la transformación Industrial de insumos y productos, al igual que la prestación de servicios, consultorías y ejecución de obras en todas las ramas de la construcción, Industrial y Civil</li></ul>
+</article>
+<article class="articulo" id="art-6">
+<p class="art-lead"><span class="art-num">Art. 6°.</span> Principios. La Cooperativa regulará su organización y funcionamiento de acuerdo con los siguientes principios:</p>
+<ul><li>Adhesión y retiro voluntario de socios;</li><li>Gobierno democrático traducido en la igualdad de derechos y obligaciones, sin consideración al capital aportado;</li><li>Membresía voluntaria y abierta: La membresía en una cooperativa es voluntaria, abierta a todas las personas que sean capaces de usar sus servicios y que estén dispuestas a aceptar las responsabilidades de ser miembro, sin discriminación de órdenes de género, social, política y/o religiosa;</li><li>Control democrático de los miembros: Las cooperativas son organizaciones democráticas controladas por sus miembros que participan activamente en establecer sus políticas y tomar decisiones. Los hombres y mujeres que sean elegidos o nombrados como representantes son responsables ante los miembros. En las cooperativas de base los miembros poseen iguales derechos (1 miembro, 1 voto) y en las cooperativas de otros niveles están organizadas en una forma democrática apropiada.</li><li>Participación de los miembros en las finanzas: Los miembros contribuyen igualmente y controlan democráticamente el capital de su cooperativa. Ellos reciben una compensación, si existe, limitada del capital suscrito como condición de su membresía. Los excedentes son asignados, por decisión de sus miembros, para algunos o todos de los siguientes propósitos: desarrollar su cooperativa; beneficiar a los miembros en proporción a las operaciones con su cooperativa; y sostener otras actividades aprobadas por la membresía.</li><li>Autonomía e Independencia: Las cooperativas son autónomas, organizaciones de auto apoyo controladas por sus miembros. Si llegan a acuerdos con otras organizaciones, incluyendo gobiernos, o captan capitales de recursos externos, lo hacen en términos que aseguren el control democrático por sus miembros y mantengan la autonomía cooperativa.</li><li>Educación, Capacitación e información: Las cooperativas proveen educación y capacitación a sus miembros, representantes electos, gerentes y empleados de modo a contribuir en forma efectiva al desarrollo de sus cooperativas. Ellas informan al público en general, particularmente a jóvenes y a líderes de opinión acerca de la naturaleza y beneficios del cooperativismo.</li><li>Cooperación entre Cooperativas: Las cooperativas sirven a sus miembros en forma más efectiva y fortalecen al movimiento cooperativo trabajando juntas a través de estructuras locales, nacionales, regionales e internacionales;</li><li>Responsabilidad con la comunidad: Las cooperativas, mientras enfocan las necesidades y deseos de sus miembros, trabajan por el desarrollo sustentable de sus comunidades.</li></ul>
+</article>
+<article class="articulo" id="art-7">
+<p class="art-lead"><span class="art-num">Art. 7°.</span> Actividades.</p>
+<ul><li>Construir, adquirir o arrendar oficinas, locales, etc. para uso de la cooperativa.</li><li>Adquirir viviendas individuales o colectivas, construirlas sea por administración o por medio de contratos con empresas del ramo, para entregarlas en uso o en propiedad a los socios en las condiciones que se especifiquen en el reglamento respectivo;</li><li>Gestionar para los socios los préstamos necesarios para la construcción de obras y servicios públicos, como así también seguros que contratará con terceros;</li><li>Gestionar y obtener préstamos de instituciones oficiales o privadas, nacionales o extranjeras, para el financiamiento de los programas de trabajo o para distribuirlos entre los socios, a fin de facilitar el desarrollo de las actividades de los mismos.</li><li>Comprar, vender, permutar, arrendar, hipotecar, constituir fideicomisos y prendas; gravar en las condiciones más ventajosas posibles, todos los bienes muebles o inmuebles necesarios para el cumplimiento de los fines y objetivos.</li><li>Recibir de sus socios depósitos en caja de ahorro( a la vista, a plazo, programado), y concederles dinero en préstamos, con garantía real o personal, de conformidad con la reglamentación dispuesta;</li><li>Vender a los socios y familiares mercaderías de uso profesional, o de consumo familiar pudiendo comercializar a crédito conforme a las reglamentación internas y las disposiciones Legales vigentes.</li><li>Participar, concursar y presentarse en licitaciones públicas, concursos de ofertas, llamados a contratación directa y cualquier otra modalidad de contratación convocada por organismos del Estado (Gobierno Central, Departamentales o Municipales), entes descentralizados, autárquicos, empresas públicas o de economía mixta, y entidades binacionales; así como en licitaciones, concursos y llamados del sector privado, ya sea en forma individual o bajo la modalidad de consorcios con otras personas físicas o jurídicas, nacionales o extranjeras, para la ejecución de obras, prestación de servicios o provisión de bienes relacionados con el objeto de la cooperativa, de conformidad con lo establecido en la Ley N° 7.021/22 de Contrataciones Publicas y sus reglamentaciones vigentes.</li><li>Obtener préstamos de entidades crediticias de origen nacional o extranjero, con aval o sin él, mediante los procedimientos legalmente admitidos destinados al cumplimiento del objetivo señalado en el Inciso “C” del Art. 5° de este estatuto. Para la consecución de tales fines podrá adquirir bienes muebles e inmuebles: instalaciones y maquinarias para sus asociados los que a su vez quedaran prendados a favor de la Cooperativa, así como podrá abrir cuentas corrientes en los bancos nacionales o extranjeros, descontar, ceder, transferir, pagarés, documentos y letras, tomar o dar dinero en préstamos con garantía o sin ella.</li><li>Importar, exportar, comprar, vender, fabricar y distribuir maquinarias pesadas, semi-pesadas y livianas, vehículos utilitarios, equipos, repuestos, piezas, partes, Tecnología en General, equipos informáticos, de telecomunicaciones y electrónica, incluyendo desde artículos de uso cotidiano, hasta soluciones tecnológicas de alta Gama y de punta para los sectores Comerciales, civil e industrial, accesorios, herramientas, materias primas e insumos y operativos destinados al sector de la construcción, la infraestructura vial, el desarrollo industrial y la prestación de servicios profesionales en general, ya sea para el uso de la propia Cooperativa, para su comercialización o para la provisión directa a sus asociados en condiciones ventajosas.</li><li>Prestar asistencia técnica a las actividades de sus socios.</li><li>Servicio de Arrendamiento y Leasing: Prestar servicios de alquiler, arrendamiento operativo, usufructo o arrendamiento financiero (leasing) de maquinarias, herramientas, encofrados, andamios y equipos industriales o de construcción pesada y liviana, priorizando el acceso a los asociados para sus proyectos y, en forma subsidiaria y ante la existencia de capacidad ociosa, a terceros, con el propósito de generar recursos que fortalezcan el patrimonio y los servicios de la Cooperativa, conforme a la reglamentación interna.</li><li>Talleres y Servicio Postventa: Establecer, equipar y operar talleres mecánicos, centros de mantenimiento preventivo y correctivo, y laboratorios técnicos para la reparación, calibración y puesta a punto de maquinarias, motores y componentes industriales, garantizando la provisión permanente de repuestos legítimos y asistencia técnica calificada para el parque automotor y de maquinarias de la Cooperativa y de sus miembros.</li><li>Alianzas Internacionales y Representaciones: Gestionar representaciones comerciales, distribuciones oficiales y franquicias de marcas internacionales de fabricantes de maquinarias, repuestos y tecnologías aplicadas a la industria y la construcción, optimizando la cadena de suministro internacional y la logística de importación.</li><li>Realizar, en suma, todos los actos jurídicos que se relacionen con los fines de la Cooperativa y que no sean contrarios a las Leyes del país.</li></ul>
+</article>
+</div>
+<section class="capitulo" id="cap-III">
+<div class="capitulo-head"><span class="capitulo-num">Capítulo III</span><h2>De los socios</h2></div>
+<div class="capitulo-body">
+<article class="articulo" id="art-8">
+<p class="art-lead"><span class="art-num">Art. 8°.</span> Requisitos para ser socio. Podrán asociarse a la cooperativa, las personas físicas que satisfagan los requisitos siguientes:</p>
+<ul><li>Haber cumplido los 18 años de edad, ser legalmente capaz de acuerdo con la ley de cooperativas y demás disposiciones legales vigentes.</li><li>Residir preferentemente dentro de los límites de la ciudad de Fernando de la Mora y/o zona de influencia del área metropolitana y/o desarrollar actividades laborales permanentes en la jurisdicción de las agencias y/o sucursales; o estar ligado al rubro de la construcción, Industrial o servicios profesionales.</li><li>Abonar una tasa inicial no reembolsable de 150.000 Gs.- (Ciento cincuenta mil) para gastos administrativos, cuyo monto lo establece el Consejo de Administración;</li><li>Presentar al Consejo de Administración una solicitud de admisión y haber sido aprobada por dicho órgano.</li><li>Mantener el siguiente vínculo común, a excepción de los socios fundadores: Contar por lo menos con la firma de 1 de los socios fundadores y/o socios con antigüedad mínima de 1 año, como socio proponente.</li><li>Para los socios fundadores: suscribir como mínimo Cien (100) Certificados de Aporte de 30.000 Gs. (treinta mil) cada uno, equivalente a un capital de 3.000.000 Gs. (tres millones de guaraníes). Al momento de la asamblea constitutiva, cada socio fundador deberá integrar el 60% (sesenta por ciento) de dicho monto, equivalente a 1.800.000 Gs. (un millón ochocientos mil guaraníes). El saldo restante del 40% (cuarenta por ciento) 1.200.000 Gs (un millón doscientos mil guaraníes) se integrará en hasta 6 (seis) cuotas mensuales y consecutivas.</li><li>Para socios comunes/ordinarios: para aquellos asociados que ingresen con posterioridad a la constitución de la entidad, se establece obligatoriedad de abonar una cuota mensual total de 50.000 Gs. (cincuenta mil guaraníes). Dicho monto se distribuirá e integrará de la siguiente forma: 30.000 Gs. (treinta mil guaraníes) destinado a la caja de aporte para la integración progresiva de su certificados de aportación y 20.000 Gs (veinte mil guaraníes) destinado al Fondo de Solidaridad.</li></ul>
+</article>
+<article class="articulo" id="art-9">
+<p class="art-lead"><span class="art-num">Art. 9°.</span> Asociación de Persona Jurídica. Las personas jurídicas que no persiguen fines de lucro y son de interés social a juicio del Instituto Nacional de Cooperativismo, podrán asociarse a la Cooperativa toda vez que satisfagan, además los requisitos indicados en los incisos a, c, d, e y g del artículo anterior.</p>
+</article>
+<article class="articulo" id="art-10">
+<p class="art-lead"><span class="art-num">Art. 10°.</span> Datos del Solicitante. La solicitud de admisión que presente al Consejo de Administración deberá contener, por lo menos, los siguientes datos: nombre y apellido, nacionalidad, lugar y fecha de nacimiento, estado civil, ocupación habitual, ingreso regular, número de cédula de identidad, domicilio actual, manifestación expresa de aceptar estos estatutos, nombre de un referente y firma del solicitante. Si se trata de extranjero, deberá presentar, además el certificado de radicación permanente.</p>
+</article>
+<article class="articulo" id="art-11">
+<p class="art-lead"><span class="art-num">Art. 11°.</span> Responsabilidad Patrimonial de los socios. A todos los socios corresponden igual derecho y obligación, independientemente del monto de sus aportes y la responsabilidad patrimonial de los socios por las obligaciones contraídas con Cooperativas y terceros, se limita al monto de su capital suscrito.</p>
+</article>
+<article class="articulo" id="art-12">
+<p class="art-lead"><span class="art-num">Art. 12°.</span> Decisión sobre ingreso. La aceptación o rechazo de las solicitudes de ingreso, será decidida por el Consejo de Administración en la primera sesión que realice con posterioridad a la recepción de la solicitud, en el momento de presentar la solicitud indicada en el artículo 10° deberán satisfacer las exigencias previstas en los incisos e y g) del Art. 8° de este estatuto, sin perjuicio de que el Consejo rechace posteriormente el pedido de ingreso, supuesto en el cual se reintegrará al solicitante las sumas abonadas en el concepto establecido de adelanto de aportes según el Art.8°. Con excepción de los fundadores, la fecha de ingreso de los socios, para todos los fines legales será la de la sesión del Consejo de Administración que resolvió aceptar la admisión.</p>
+</article>
+<article class="articulo" id="art-13">
+<p class="art-lead"><span class="art-num">Art. 13°.</span> Derechos de los socios. Los socios gozarán de los siguientes derechos:</p>
+<ul><li>Utilizar los servicios que presta la Cooperativa, dentro de los límites establecidos en este Estatuto y Reglamentos que se dicten.</li><li>Asistir a las asambleas con derecho a voz y voto, salvo que medie alguna sanción inhabilitante. A cada socio le corresponde un voto, personal e indelegable, sin perjuicio de la excepción prevista en el Art. 62° para las personas jurídicas socias.</li><li>Elegir y ser elegido para ocupar cualquier cargo electivo.</li><li>Percibir los intereses sobre sus aportes de capital y participar de los retornos anuales, si los hubiere en las condiciones que determinen las Asambleas.</li><li>Presentar al Consejo de Administración sugerencias, proyectos e iniciativas que tengan por objeto el mejoramiento y la ampliación de los servicios que presta la Cooperativa.</li><li>Plantear recursos de reconsideración ante el Consejo de Administración y en grado de apelación ante la Asamblea General, en los casos en que el asociado se creyere lesionado en sus derechos o afectada su situación societaria o por alguna resolución de la Autoridad de Aplicación.</li><li>Presentar por escrito ante la Junta de Vigilancia las denuncias o quejas por las infracciones cometidas por algún socio, directivo o funcionario de la Cooperativa. Fiscalizar por intermedio de la Junta de Vigilancia todas las actuaciones administrativas de la Entidad.</li><li>Cualquier socio podrá solicitar a la Autoridad de Aplicación la convocatoria a Asamblea General Ordinaria o Extraordinaria, en ambos casos conforme a lo establecido en la Ley y el Reglamento.</li><li>Ejercer su defensa en los sumarios promovidos en su contra por el Consejo de Administración, de las sanciones podrá apelarse ante la Asamblea, y mientras no queden estos confirmados, los socios no pierden su calidad de tales.</li><li>Renunciar de su calidad de socio y solicitar su reintegro a la Cooperativa cuando lo estime conveniente.</li><li>Recurrir a los estrados Judiciales en defensa de sus derechos y de la sociedad misma.</li><li>El socio común cumplirá con su obligación de suscribir e integrar capital mediante el pago mensual obligatorio establecido en el Art. 8 inc. g. Dichos montos se registraran de forma continua en su cuenta patrimonial, emitiéndose un Certificado de aportación cada vez que las sumas integradas alcancen el valor nominal fijado en el Art. 27°.</li><li>Suscribir e integrar los certificados de aportación mínimo obligatorio que corresponda a su categoría de socio (fundador u ordinario) de conformidad de los montos, porcentajes y plazos establecidos en los artículos 8° de este estatuto.</li></ul>
+</article>
+<article class="articulo" id="art-14">
+<p class="art-lead"><span class="art-num">Art. 14°.</span> Reingreso de Ex socios. Los socios que fueren expulsados de la cooperativa, podrán ser readmitidos después de haber transcurrido, por lo menos, cinco años, contados desde la fecha en la que la resolución quedó firme y ejecutoriada, siempre que los daños que hubieran causados hayan sido reparados íntegramente. Los excluidos podrán ser readmitidos al cabo de seis meses de la resolución respectiva, mientras que los renunciantes deben aguardar treinta días como mínimo para ser admitidos de nuevo como socios y por única vez. En todos los casos de readmisión se asignará de nuevo número de matrícula.</p>
+</article>
+<article class="articulo" id="art-15">
+<p class="art-lead"><span class="art-num">Art. 15°.</span> Deberes de los socios. Son deberes de los socios:</p>
+<ul><li>Acatar las disposiciones de la Ley, del presente estatuto, sus reglamentos, las resoluciones de las asambleas y del consejo de administración.</li><li>Cumplir con puntualidad los compromisos económicos u obligaciones contraídas con la cooperativa.</li><li>Suscribir anualmente como mínimo doce (12) certificado de aportación e integrarlos en cuotas mensuales.</li><li>Aceptar, salvo razones de fuerza mayor el desempeño de los cargos para los cuales fueron elegidos o nombrados y asistir con puntualidad a las reuniones.</li><li>Desempeñar con honestidad, eficiencia y responsabilidad los cargos para los cuales fueron electos.</li><li>Asistir a todos los actos, reuniones y Asambleas para los cuales fueron convocados legal y estatutariamente.</li><li>Responder con su patrimonio cooperativo o particular por los daños y perjuicios que causare a la cooperativa por hechos ilícitos cometidos, previa comprobación de los mismos en sumario administrativo.</li><li>Responder por las obligaciones económicas contraídas por la sociedad hasta el monto total de su patrimonio cooperativo.</li><li>Abstenerse de realizar actos que puedan lesionar el patrimonio económico, la imagen moral de la Cooperativa y los vínculos de solidaridad entre los socios.</li></ul>
+</article>
+<article class="articulo" id="art-16">
+<p class="art-lead"><span class="art-num">Art. 16°.</span> Pérdida de la Calidad de Socio. Se pierde la calidad de socio de la Cooperativa por los siguientes motivos:</p>
+<ul><li>Renuncia escrita presentada al Consejo de Administración y debidamente aceptada por este organismo en la primera sesión a su presentación.</li><li>Por exclusión</li><li>Por expulsión</li><li>Fallecimiento de la persona física o por disolución de la persona jurídica.</li><li>Por sentencia ejecutoria por delitos contra el patrimonio de la cooperativa.</li><li>Por pérdida de los aportes como consecuencia de la ejecución de cobro promovida contra él por la misma cooperativa.</li></ul>
+</article>
+<article class="articulo" id="art-17">
+<p class="art-lead"><span class="art-num">Art. 17°.</span> Renuncia del Socio. El socio podrá renunciar en cualquier momento, para lo cual deberá manifestar por escrito tal decisión al Consejo de Administración, podrá denegar el retiro cuando el pedido proceda de confabulación o cuando el peticionante haya sido previamente sancionado con pena de suspensión o expulsión por el Consejo de Administración o por la Asamblea General o tenga pendiente un recurso de apelación contra estas medidas. Tampoco podrá aceptarse ninguna renuncia de socios una vez que la Cooperativa haya incurrido en convocatoria de acreedores, o que habiendo el peticionante desempeñado cargos en la Cooperativa, si no haya rendido cuenta de sus gestiones.</p>
+</article>
+<article class="articulo" id="art-18">
+<p class="art-lead"><span class="art-num">Art. 18°.</span> Efectos de la renuncia. La solicitud del retiro que no haya merecido reparos por parte del Consejo de Administración surte efectos legales a partir de la fecha de presentación. Se considerará aceptación tácita si el Consejo no comunicare determinación alguna al renunciante en un plazo de treinta días contados desde el día siguiente al de la presentación de la renuncia.</p>
+</article>
+<article class="articulo" id="art-19">
+<p class="art-lead"><span class="art-num">Art. 19°.</span> El retiro del socio de la Cooperativa no le da derecho a la participación proporcional de los fondos del Capital irrepartible de conformidad con el Art. 44° de la Ley.</p>
+</article>
+<article class="articulo" id="art-20">
+<p class="art-lead"><span class="art-num">Art. 20°.</span> Renuncias simultáneas. De darse renuncias simultáneas de más de diez socios en un lapso de treinta días, aunque las solicitudes se presenten por separado, el Consejo de Administración podrá optar: entre aceptarlas y programar el pago de sus liquidaciones o solicitar la intervención del Instituto Nacional de Cooperativismo “INCOOP” o resolver la situación en una instancia conciliatoria y, de no lograrse acuerdo, se someterá la situación a la decisión de un Tribunal Arbitral, cuya instancia es obligatoria, conforme se dispone en el presente Estatuto.</p>
+</article>
+<article class="articulo" id="art-21">
+<p class="art-lead"><span class="art-num">Art. 21°.</span> Exclusión. En caso de haber dejado de operar con la cooperativa, por espacio de dos años consecutivos o incurrido en un atraso superior a un año en la integración en el aporte mínimo fijado en el Art. 8° Inc. f) o Inc. g) de este Estatuto, según corresponda su categoría o por resoluciones de Asamblea. El Consejo de Administración notificará al afectado para que en el plazo de 30 (treinta) días cumpla con los requisitos señalados. Si el socio no lo hiciere, el Consejo de Administración dispondrá su exclusión de conformidad con lo dispuesto en el Art. 31° de la Ley.</p>
+</article>
+<article class="articulo" id="art-22">
+<p class="art-lead"><span class="art-num">Art. 22°.</span> El socio presentará su renuncia y una vez aceptada la misma por el Consejo de Administración se practicará la liquidación de su cuenta tal como lo dispone el Art. 33° de la Ley y el remanente se reintegrará al socio en la forma señalada en el Art. 37° de este estatuto social.</p>
+</article>
+<article class="articulo" id="art-23">
+<p class="art-lead"><span class="art-num">Art. 23°.</span> En caso de fallecimiento de un socio, los haberes que les correspondan por cualquier concepto, serán entregados a sus herederos de conformidad con lo dispuesto en el Código Civil Paraguayo y en concordancia con lo dispuesto en el Art. 33° de la Ley de Cooperativas 438/94.</p>
+</article>
+</div>
+<section class="capitulo" id="cap-IV">
+<div class="capitulo-head"><span class="capitulo-num">Capítulo IV</span><h2>Del régimen económico</h2></div>
+<div class="capitulo-body">
+<h3 class="seccion-head">Sección I — Del patrimonio</h3>
+<article class="articulo" id="art-24">
+<p class="art-lead"><span class="art-num">Art. 24°.</span> Constitución del Patrimonio. De conformidad con las disposiciones contenidas en el Art. 36° de la Ley el patrimonio de la cooperativa se constituye con:</p>
+<ul><li>Los aportes integrados por los socios.</li><li>Los fondos de Reservas.</li><li>Los legados, donaciones, subsidios y otros recursos análogos que reciba.</li><li>Los fondos especiales creados por las Asambleas para fines específicos.</li></ul>
+</article>
+<article class="articulo" id="art-25">
+<p class="art-lead"><span class="art-num">Art. 25°.</span> El capital de los socios está representado por los Certificados de Aportación en las condiciones establecidas en este estatuto y en la forma prevista en el Art. 38° de la Ley.</p>
+</article>
+<article class="articulo" id="art-26">
+<p class="art-lead"><span class="art-num">Art. 26°.</span> La integración de capital se operará automáticamente:</p>
+<ul><li>Los aportes emergentes de la incorporación de nuevos socios.</li><li>Las nuevas aportaciones de los socios ya existentes, las que se harán conforme a estos estatutos, por resolución de una Asamblea, o por la voluntad propia de los mismos socios. Este último supuesto rige solo por encima de los montos mínimos obligatorios.</li><li>Las aportaciones originadas en la capitalización por operaciones, no serán tenidas en cuenta para determinar el cumplimiento de los aportes mínimos establecidos en este estatuto o por resoluciones de Asambleas.</li><li>Los intereses y retornos que las asambleas acuerden capitalizar.</li><li>El revalúo del Activo Fijo se efectuará de conformidad con las disposiciones legales que establece el Ministerio de Economía y Finanzas, al cierre de cada ejercicio económico. El incremento por revalúo, se destinará a la cuenta “Reserva de Revalúo”, pudiendo pasar a la cuenta capital institucional, por decisión de la Asamblea Ordinaria o Extraordinaria posterior.</li></ul>
+</article>
+<article class="articulo" id="art-27">
+<p class="art-lead"><span class="art-num">Art. 27°.</span> Valor del Certificado de Aportación. El valor nominal de cada Certificado de Aportación queda fijado en la suma de Gs. 30.000.- (Treinta mil guaraníes), anualmente la asamblea podrá fijar el eventual aumento del valor del certificado de aportación debiendo tenerse en cuenta la alteración sufrida en el salario mínimo vigente en esa fecha.</p>
+</article>
+<article class="articulo" id="art-28">
+<p class="art-lead"><span class="art-num">Art. 28°.</span> Numeración correlativa. La numeración de los certificados de aportación y títulos de certificados será siempre correlativa, pero independiente una de otra.</p>
+</article>
+<article class="articulo" id="art-29">
+<p class="art-lead"><span class="art-num">Art. 29°.</span> Los certificados de aportación integrados sumados en su totalidad percibirán un interés no mayor de diez (10) por ciento anual, que se abonará de los excedentes de cada ejercicio utilizando para dicho efecto hasta un máximo del 20% de dichos excedentes. Para el pago de los intereses sobre las aportaciones parciales se observarán las disposiciones del Art. 40° de la Ley 438/94.</p>
+</article>
+<article class="articulo" id="art-30">
+<p class="art-lead"><span class="art-num">Art. 30°.</span> Certificados de aportación. El capital de los socios estará representado por los Certificados de Aportación, que serán nominativos, indivisibles, iguales e inalterables en su valor, y transferibles solo entre socios con autorización del Consejo de Administración. El rechazo o silencio del Consejo de Administración a las solicitudes de transferencia, será recurrible ante la Asamblea.</p>
+</article>
+<article class="articulo" id="art-31">
+<p class="art-lead"><span class="art-num">Art. 31°.</span> Para la transferencia de los certificados de aportación, así como la capitalización de retornos, el Consejo de Administración tendrá en cuenta que ningún socio podrá tener en concepto de capital repartible una suma superior al 20% del total del capital social repartible integrado en la cooperativa.</p>
+</article>
+<article class="articulo" id="art-32">
+<p class="art-lead"><span class="art-num">Art. 32°.</span> Los fondos de reservas previstas en la Ley y otros que señalen este Estatuto o la Asamblea para fines específicos, así como los legados, subsidios o donaciones recibidas por la cooperativa, no pertenecen a los socios y en consecuencia bajo ningún concepto tienen derecho a su restitución proporcional los herederos de los socios dimitentes, los expulsados ni los acreedores de los socios conforme se menciona en el Art. 44° de la Ley.</p>
+</article>
+<article class="articulo" id="art-33">
+<p class="art-lead"><span class="art-num">Art. 33°.</span> Las aportaciones realizadas por los socios. Las aportaciones realizadas por los socios tendrán la calidad de bienes inembargables, salvo el caso de cobro judicial de las obligaciones del socio para con la Cooperativa prevista en el Art. 35 de la Ley. Los demás acreedores de los socios sólo pueden solicitar el embargo de los intereses sobre aportes y retornos que anualmente pudieren corresponder al socio demandado.</p>
+</article>
+<h3 class="seccion-head">Sección II — De los reintegros de los certificados de aportación y otros haberes</h3>
+<article class="articulo" id="art-34">
+<p class="art-lead"><span class="art-num">Art. 34°.</span> Oportunidad de reintegro. El importe de los certificados de aportación, los intereses y retornos aun no pagados que le correspondan, serán reintegrados a los socios que cesan en sus condiciones de tales después de la aprobación por Asamblea del Balance del Ejercicio en cuyo transcurso se produjo la cesación. No obstante, el Consejo de Administración en atención a la situación financiera de la Cooperativa y a la urgencia del caso, debidamente comprobado, podrá disponer la entrega inmediata, supuesto en el cual habilitará una cuenta transitoria para acreditar el excedente que pudiera corresponder al cesante al final del ejercicio. Este último importe deberá ser retirado por el beneficiario dentro de los 120 días siguientes a su disponibilidad previa notificación personal con acuse de recibo, de no hacerlo, se transferirá al Fondo de Fomento de la Educación Cooperativa.</p>
+</article>
+<article class="articulo" id="art-35">
+<p class="art-lead"><span class="art-num">Art. 35°.</span> Límite de Reintegro. Los reintegros que anualmente efectúe el Consejo de Administración serán hasta el 10% del capital integrado que tuviera la Cooperativa al cierre del ejercicio, según su balance aprobado por Asamblea. Si el total de la suma a reintegrarse excediera el porcentaje señalado, se procederá por riguroso orden de presentación de los casos, efectuando la correspondiente programación para los ejercicios subsiguientes de conformidad con el artículo 38 de este estatuto.</p>
+</article>
+<article class="articulo" id="art-36">
+<p class="art-lead"><span class="art-num">Art. 36°.</span> Reintegro por fallecimiento. En caso de fallecimiento del socio, el Consejo de Administración no podrá hacer dichos reintegros ni pagar los demás haberes a los herederos habientes del causante hasta tanto éstos no acrediten fehacientemente la condición legal invocada, de conformidad a las disposiciones en la materia del Código Civil Paraguayo.</p>
+</article>
+<article class="articulo" id="art-37">
+<p class="art-lead"><span class="art-num">Art. 37°.</span> Liquidación y plazo del reintegro. Para proceder al reintegro del valor de los Certificados de Aportación y otros haberes, se practicará una liquidación en la que se incluirán la suma total integrada por el cesante en concepto de aportes de capital, los retornos e intereses aun no pagados que le correspondiere y otros haberes a su favor, y se debitarán las obligaciones a su cargo; así como la parte proporcional de las pérdidas producidas a la fecha de su cesación, si los hubiere. El saldo neto que resulte se pagará de la siguiente forma:</p>
+<ul><li>Hasta en 6 (seis) cuotas mensuales e iguales a los excluidos y renunciantes.</li><li>En 10 (diez) cuotas mensuales e iguales a los desvinculados por expulsión.</li><li>En caso de que, luego de la liquidación, resultare un saldo deudor de parte del socio, la Cooperativa exigirá el pago correspondiente de acuerdo con las normas legales vigentes.</li><li>En un solo pago a los derechos habientes de los socios fallecidos, lo que se efectivizará a los treinta días corridos a partir de la presentación de la resolución respectiva. Si aún no fuere pagado el reintegro del socio, su capital seguirá devengando el interés correspondiente que la Asamblea hubiere resuelto sobre la distribución de excedentes del ejercicio en que se produjo su desvinculación.</li></ul>
+</article>
+<article class="articulo" id="art-38">
+<p class="art-lead"><span class="art-num">Art. 38°.</span> Límite del reintegro. Se dejará para el término del ejercicio siguiente los reintegros excedidos; si se tratare de renuncias simultáneas, el orden se establecerá por sorteo, en todos los casos el Consejo de Administración deberá ajustar sus decisiones a lo establecido en el Art. 34° de la Ley.</p>
+</article>
+<h3 class="seccion-head">Sección III — De los resultados económicos</h3>
+<article class="articulo" id="art-39">
+<p class="art-lead"><span class="art-num">Art. 39°.</span> Ejercicio Económico. El ejercicio económico financiero de la cooperativa abarcará el periodo comprendido entre el 1 (uno) de enero al 31 (treinta y uno) de diciembre de cada año. En esta última fecha la entidad cerrará todos sus libros contables, redactará la memoria del Consejo de Administración la que contendrá una reseña de las principales actividades realizadas durante el ejercicio fenecido y la sugerencia de iniciativas a emprenderse en forma mediata e inmediata, un comentario sobre la situación económica y financiera de la Cooperativa y la proposición acerca de la distribución de los excedentes del ejercicio si los hubiere. De los ingresos totales obtenidos en cada ejercicio por la gestión económica de la cooperativa se deducirán los gastos de explotación y operación así como las depreciaciones de los bienes de uso y los cargos diferidos, las previsiones y amortizaciones. El saldo así obtenido constituirá el excedente del ejercicio cuya distribución se hará en la forma siguiente:</p>
+<ul><li>El diez por ciento (10%) como mínimo para Reserva Legal, hasta alcanzar cuanto menos, el veinticinco por ciento (25%) del capital integrado de la Cooperativa.</li><li>El diez por ciento (10%) como mínimo para el Fondo de Fomento de Educación Cooperativo.</li><li>El cinco por ciento (5%) para Fondos de Inversión.</li><li>El tres por ciento (3%) para el sostenimiento de la Confederación o Federación a que está asociada, previsto en el Art. 42°, inc. f. de la Ley.</li><li>Pago de interés sobre los Certificados de Aportación cuyo porcentaje no excederá lo señalado en el artículo 29 de este estatuto.</li><li>El 10% (diez por ciento) para Fondo de Solidaridad.</li><li>Otros fondos específicos que resuelva la Asamblea para fines determinados;</li><li>El remanente se distribuirá entre los socios en concepto de retorno, en proporción a los servicios y operaciones realizadas con la Cooperativa</li></ul>
+</article>
+<article class="articulo" id="art-40">
+<p class="art-lead"><span class="art-num">Art. 40°.</span> Destino de los Excedentes Especiales. Los excedentes provenientes de operaciones con terceros, realizados de conformidad con esta Ley y su reglamentación, al igual que los no generados por la diferencia entre el costo y el precio de los servicios, serán distribuidos de la manera prevista en el Artículo 42 de la Ley 5501/15.</p>
+</article>
+<article class="articulo" id="art-41">
+<p class="art-lead"><span class="art-num">Art. 41°.</span> La Reserva Legal y el Fondo de la Educación Cooperativa son irrepartibles. La primera será utilizada para cubrir eventuales pérdidas de la Cooperativa, y el segundo en la ejecución de programas de educación entre sus socios y demás personas vinculadas con la entidad, debiendo informarse a la Asamblea General Ordinaria el movimiento de estos rubros.</p>
+</article>
+<article class="articulo" id="art-42">
+<p class="art-lead"><span class="art-num">Art. 42°.</span> Enjugamiento de Pérdida. Si la gestión económica de un ejercicio arroja pérdida, por resolución de asamblea será cubierta en la forma regulada en el Art. 43° de la Ley 438/94, nunca sin embargo, podrán distribuirse excedentes repartibles sin compensar totalmente las pérdidas de ejercicios anteriores.</p>
+</article>
+<article class="articulo" id="art-43">
+<p class="art-lead"><span class="art-num">Art. 43°.</span> Régimen de Retiro de Retornos e Intereses. La Asamblea puede resolver que los retornos e intereses se distribuyan total o parcialmente en efectivo o en certificado de aportación, el importe a ser distribuido en efectivo, estará a disposición de los socios después de ( 30 ) treinta días de realizada la asamblea, en caso de no ser retirado dentro de los (90 ) noventa días siguientes a la disponibilidad, será acreditado como aporte de capital.</p>
+</article>
+</div>
+<section class="capitulo" id="cap-V">
+<div class="capitulo-head"><span class="capitulo-num">Capítulo V</span><h2>Del registro de actividades</h2></div>
+<div class="capitulo-body">
+<article class="articulo" id="art-44">
+<p class="art-lead"><span class="art-num">Art. 44°.</span> Libros Sociales. La cooperativa llevará los siguientes libros de Registros Sociales:</p>
+<ul><li>Un libro de Actas de Asamblea.</li><li>Un libro de Actas del Consejo de Administración.</li><li>Un libro de Actas de la Junta de Vigilancia.</li><li>Un libro de Registro de Socios.</li><li>Un libro de Actas de Asistencia a Asambleas.</li><li>Un libro de Actas del Tribunal Electoral Independiente.</li><li>Un libro de Registro de Pérdida de la calidad de socio.</li><li>Libro de Registro de asistencia a las sesiones de los órganos electivos y comités auxiliares.</li></ul>
+</article>
+<article class="articulo" id="art-45">
+<p class="art-lead"><span class="art-num">Art. 45°.</span> Libros Contables. Para los registros Contables de la Cooperativa llevará los siguientes libros principales:</p>
+<ul><li>Libro Inventario.</li><li>Libro Diario.</li><li>Libro de Balance de Sumas y Saldos.</li><li>Libro Mayor.</li></ul>
+</article>
+<article class="articulo" id="art-46">
+<p class="art-lead"><span class="art-num">Art. 46°.</span> Rubricación de Libros. Todos los libros principales de la Cooperativa de registros sociales, así como los registros contables y los auxiliares que se adopten, deberán estar rubricados por el Instituto Nacional de Cooperativismo y deben ser utilizados conforme a las normas técnicas fijadas por este organismo.</p>
+</article>
+</div>
+<section class="capitulo" id="cap-VI">
+<div class="capitulo-head"><span class="capitulo-num">Capítulo VI</span><h2>De las autoridades</h2></div>
+<div class="capitulo-body">
+<article class="articulo" id="art-47">
+<p class="art-lead"><span class="art-num">Art. 47°.</span> Autoridades. Las autoridades de la Cooperativa encargadas de la dirección institucional y administrativa, del control interno, de la ejecución de los negocios y demás actividades societarias son:</p>
+<ul><li>Las Asambleas Generales de Socios.</li><li>El Consejo de Administración.</li><li>La Junta de Vigilancia.</li><li>El Tribunal Electoral Independiente.</li><li>Los Comités Auxiliares.</li></ul>
+</article>
+<h3 class="seccion-head">Sección I — De las Asambleas</h3>
+<article class="articulo" id="art-48">
+<p class="art-lead"><span class="art-num">Art. 48°.</span> Naturaleza de la Asamblea y Clases. La Asamblea es la autoridad máxima de la cooperativa. Sus decisiones adoptadas, conforme a la legislación y sus reglamentaciones, el Estatuto Social y otras disposiciones normativas vigentes, obligan a los demás órganos y a los socios presentes o ausentes. Por su oportunidad, contenido y características pueden ser:</p>
+<ul><li>Asamblea de Constitución.</li><li>Asamblea Ordinaria.</li><li>Asamblea Extraordinaria.</li><li>Asamblea de Intervención.</li></ul>
+</article>
+<article class="articulo" id="art-49">
+<p class="art-lead"><span class="art-num">Art. 49°.</span> Asamblea Ordinaria. La Asamblea Ordinaria se caracteriza por:</p>
+<ul><li>Llevarse a cabo dentro de los 120 (ciento veinte) días siguientes a la fecha de cierre del ejercicio económico-financiero: en la fecha y sitio que determine el Consejo de Administración:</li><li>Será convocada por el Consejo de Administración, y a falta de él por la Junta de Vigilancia, si aquel no lo hiciere en el plazo indicado el Instituto Nacional de Cooperativismo, en caso de omisión de los citados, podrá convocar a solicitud de cualquier socio con una anticipación mínima de 20 (veinte) días respecto a la fecha de realización.</li><li>La convocatoria deberá ir acompañada de un ejemplar del Plan de Actividades y Proyecto de Presupuestos para el ejercicio en curso, la Memoria del Balance con el Cuadro de Resultados, del Informe y del Dictamen de la Junta de Vigilancia y de la nómina de las autoridades de la cooperativa entregándose a los socios todos estos documentos en medios magnéticos y material impreso.</li><li>Se ocupará específicamente de: Lectura y consideración de la Memoria del Consejo de Administración, Balance General, cuadro demostrativo de Excedentes o Enjugamiento de pérdidas, Informe y Dictamen de la Junta de Vigilancia y Tribunal Electoral Independiente; Distribución de excedentes o Enjugamiento de pérdidas; Plan General de Trabajos y Presupuesto General de Gastos y Recursos para el ejercicio en curso; Elección de miembros del Consejo de Administración, Junta de Vigilancia y Tribunal Electoral Independiente.</li></ul>
+</article>
+<article class="articulo" id="art-50">
+<p class="art-lead"><span class="art-num">Art. 50°.</span> Asamblea Extraordinaria. La Asamblea Extraordinaria tiene las siguientes características:</p>
+<ul><li>Será convocada por iniciativa del Consejo de Administración a pedido de la Junta de Vigilancia o del 20% (veinte por ciento) del total de los socios, siempre que el total de los socios no fuera mayor de cuatrocientos, de ser mayor este número podrá ser convocada a pedido del 5% (cinco por ciento) de los socios.</li><li>Se podrá llevar a cabo en cualquier momento, en la fecha y sitio preestablecidos con el objeto de considerar exclusivamente los puntos señalados en el orden del día respectivo, siendo nulas las deliberaciones sobre temas ajenos al mismo.</li><li>La Junta de Vigilancia podrá convocarla directamente en el caso que el Consejo de Administración no respondiere o denegase el pedido por escrito formulado por aquella dentro del plazo de 20 (veinte) días.</li><li>La Autoridad de Aplicación, previa audiencia a las autoridades de la cooperativa, podrá llamar a Asamblea Extraordinaria a pedido del porcentaje de socios señalado toda vez que no fuera al mismo tiempo tramitado regularmente por los organismos citados.</li></ul>
+</article>
+<article class="articulo" id="art-51">
+<p class="art-lead"><span class="art-num">Art. 51°.</span> La consideración de los asuntos relacionados con la modificación de este Estatuto, la fusión o la afiliación a otros organismos cooperativos, la autorización para la emisión de bonos o certificados de inversión, la disolución de la Cooperativa, elección de autoridades en caso de acefalía, son privativas de las Asambleas Extraordinarias.</p>
+</article>
+<article class="articulo" id="art-52">
+<p class="art-lead"><span class="art-num">Art. 52°.</span> Adopción de Resoluciones. Las Resoluciones de las Asambleas se tomarán por simple mayoría de votos de los presentes en la sesión, salvo los asuntos mencionados en el artículo anterior y la cuestión de enajenación de inmuebles de la Sociedad. Para todas estas resoluciones será imprescindible el voto favorable de los dos tercios de los presentes. También se requerirá igual número de votos para los pedidos de reconsideración de Resoluciones aun no ejecutadas; para los cómputos, las abstenciones serán consideradas como ausencia. Las resoluciones de las Asambleas, adoptadas de conformidad a las disposiciones legales y estatutarias, son obligatorias para todos los socios, incluso para los ausentes o disconformes.</p>
+</article>
+<article class="articulo" id="art-53">
+<p class="art-lead"><span class="art-num">Art. 53°.</span> Quórum. El quórum para las sesiones de las Asambleas queda fijado en un número equivalente a la mitad más uno de los socios habilitados a la fecha de la respectiva convocatoria. Estarán habilitados con voz y voto los socios que estén al día en sus obligaciones sociales y económicas con la cooperativa a la fecha de la convocatoria; tratándose de Asamblea Extraordinaria convocada a solicitud del porcentaje de socios establecidos en este estatuto, el evento no tendrá lugar y se declarará nula la convocatoria, si a la hora máxima prevista para el inicio de la Asamblea, no se contare con la presencia de al menos 50% de los firmantes del pedido de convocatoria.</p>
+</article>
+<article class="articulo" id="art-54">
+<p class="art-lead"><span class="art-num">Art. 54°.</span> La convocatoria de la Asamblea General se dará con bastante publicidad, con una antelación mínima de 15 (quince) días a su realización, ella contendrá la fecha, el lugar y la hora indicada. La Asamblea sesionará si se contare con el quórum establecido en el artículo anterior de este estatuto. En caso contrario, y con exclusión del caso especial previsto en el artículo anterior para las asambleas solicitadas por los socios, una hora después de la hora fijada la misma sesionara válidamente con cualquier numero de socios presentes. Las documentaciones deberán estar disponibles en la oficina de la cooperativa para los socios que soliciten, desde diez (10) días antes de la realización de la Asamblea.</p>
+</article>
+<article class="articulo" id="art-55">
+<p class="art-lead"><span class="art-num">Art. 55°.</span> Orden del día. En el orden del día de la Asamblea General, se incorporarán los asuntos de cuya consideración es solicitada por escrito por la junta de Vigilancia o por el 10% de los socios como mínimo. Dicha solicitud deberá presentarse al Consejo de Administración con una antelación de 10 (diez) días cuanto menos, a la fecha fijada en la convocatoria.</p>
+</article>
+<article class="articulo" id="art-56">
+<p class="art-lead"><span class="art-num">Art. 56°.</span> La Elección de Miembros del Consejo de Administración, de la Junta de Vigilancia y Tribunal Electoral Independiente se hará mediante votación nominal, directa y secreta. Serán electos los que obtuvieren mayor cantidad de votos, correspondiendo la titularidad a los más votados y la suplencia a los menos votados, conforme al número de vacancias disponibles. También se recurrirá a la votación secreta para resolver cuestiones sobre puntos en que se refieran a asuntos personales, las demás decisiones se podrán tomar por votación a viva voz.</p>
+</article>
+<article class="articulo" id="art-57">
+<p class="art-lead"><span class="art-num">Art. 57°.</span> Autoridades de la Asamblea. Las Asambleas Generales serán presididas por un socio designado al efecto y como Secretario preferentemente actuará el titular de ese cargo en el Consejo de Administración. Dos (2) socios presentes serán designados por la Asamblea para suscribir en representación de todos el Acta respectiva, conjuntamente con el Presidente y Secretario de la Asamblea.</p>
+</article>
+<article class="articulo" id="art-58">
+<p class="art-lead"><span class="art-num">Art. 58°.</span> Socios disconformes y ausentes. Para los socios disconformes se aplicará lo dispuesto en la Ley y el Reglamento. Para los ausentes el derecho debe ser ejercido dentro de los 30 días contados a partir de la fecha de la respectiva Asamblea. El reintegro de los Certificados de Aportación y otros haberes por esta causa, se efectuará en los tres (3) meses posteriores contados a partir de la Asamblea respectiva.</p>
+</article>
+<article class="articulo" id="art-59">
+<p class="art-lead"><span class="art-num">Art. 59°.</span> Votación prohibida. En la votación que tenga por objeto considerar las gestiones del Consejo de Administración, la Junta de Vigilancia o el Tribunal Electoral Independiente, los miembros de tales órganos no podrán votar. Los socios que trabajen como personal rentado no podrán votar en las decisiones en las cuales se traten directa o indirectamente temas laborales, tampoco pueden patrocinar, ni proponer nombres para la elección de miembros de los órganos, de conformidad con lo dispuesto en el Art. 61 de la Ley 438/94.</p>
+</article>
+<article class="articulo" id="art-60">
+<p class="art-lead"><span class="art-num">Art. 60°.</span> Desempate. Los empates en las votaciones, a excepción de la elección de autoridades, serán resueltos por el Presidente de la Asamblea, cargo éste que no podrán desempeñar los miembros del Consejo de Administración ni de ningún otro órgano electivo. En el hipotético caso de darse empates en las cuestiones electorales y los derivados de las votaciones secretas, serán resueltos por sorteo.</p>
+</article>
+<article class="articulo" id="art-61">
+<p class="art-lead"><span class="art-num">Art. 61°.</span> Asuntos indelegables. Las Asambleas no podrán delegar al Consejo de Administración, ni a ningún órgano, las atribuciones que les competen en la Ley 438/94.</p>
+</article>
+<article class="articulo" id="art-62">
+<p class="art-lead"><span class="art-num">Art. 62°.</span> Cantidad de votos por socio. En la Asamblea General Ordinaria y Extraordinaria, todo socio sin excepción, tendrá únicamente un voto cualquiera sea la cantidad de Aportes suscritos o pagados. Se aceptan los votos por poder para el caso de personas jurídicas.</p>
+</article>
+<article class="articulo" id="art-63">
+<p class="art-lead"><span class="art-num">Art. 63°.</span> Límite de préstamos. Anualmente la Asamblea Ordinaria deberá fijar el monto máximo de los préstamos que pueda contraer el Consejo de Administración, teniendo en cuenta el volumen operativo de la Empresa. Si en el transcurso del ejercicio surge algún proyecto beneficioso para la Entidad que requiera una inversión superior al 30% (treinta por ciento) del monto autorizado por la Asamblea Ordinaria, el Consejo de Administración deberá llamar a Asamblea Extraordinaria para la consideración del mismo.</p>
+</article>
+<h3 class="seccion-head">Sección II — Del Consejo de Administración</h3>
+<article class="articulo" id="art-64">
+<p class="art-lead"><span class="art-num">Art. 64°.</span> Naturaleza del consejo. El Consejo de Administración es la máxima autoridad administrativa de la Cooperativa, y su representante legal, en tal sentido ejerce sus funciones de dirección, administración y ejecución, y sus miembros son electos por la Asamblea Ordinaria de socios, siendo responsables ante ella.</p>
+</article>
+<article class="articulo" id="art-65">
+<p class="art-lead"><span class="art-num">Art. 65°.</span> Requisitos para ser Consejero. Para ser miembro del Consejo de Administración se requiere:</p>
+<ul><li>Ser socio de la Cooperativa con una antigüedad mínima de 5 (cinco) años o ser socio fundador. Dicho requisito será exigible luego de cumplirse Dos años de la constitución de la entidad.</li><li>Los postulantes no deben estar en mora en el cumplimiento de sus obligaciones, en los dos últimos años y a la fecha de la convocatoria.</li><li>Acreditar conocimientos en temas cooperativos mediante certificados de participación, de como mínimo 20 horas cátedra.</li><li>No haber sido demandado y sentenciado culpable judicialmente por delitos económicos, ni tener demandas pendientes de finiquito, determinados por antecedentes Judicial y policiales.</li><li>Haber participado por lo menos en dos de las tres últimas Asambleas Ordinarias de la Cooperativa.</li><li>No estar interdicto judicialmente, lo que se acreditará con el respectivo certificado expedido por la DGRP.</li></ul>
+</article>
+<article class="articulo" id="art-66">
+<p class="art-lead"><span class="art-num">Art. 66°.</span> Impedimentos para ser Directivo. No podrán ser designados miembros del Consejo de Administración:</p>
+<ul><li>Las personas unidas por parentesco, dentro del segundo grado de consanguinidad y primer grado de afinidad, con otro miembro del Consejo de Administración.</li><li>El cónyuge de un miembro del Consejo de Administración, o la persona con quien dicho miembro tenga una unión de hecho.</li><li>Los incapaces de hecho, absolutos y relativos.</li><li>Los que actúen en empresas en competencia o con intereses opuestos.</li><li>Los quebrados culpables o fraudulentos, los inhabilitados judicialmente para ocupar cargos públicos, y los condenados por delitos contra el patrimonio y contra la fe pública. Las incompatibilidades establecidas se extienden al vínculo existente entre miembros de la Junta de Vigilancia, el Tribunal Electoral Independiente y el Consejo de Administración.</li></ul>
+</article>
+<article class="articulo" id="art-67">
+<p class="art-lead"><span class="art-num">Art. 67°.</span> Composición. El consejo de administración se compondrá de 5 (cinco) miembros titulares y 2 (dos) suplentes: Presidente, Vicepresidente, Secretario, Tesorero, Vocal Titular y dos Vocales Suplentes. La distribución de estos cargos será privativa del propio Consejo, la hará por votación secreta o por consenso dentro de un plazo no mayor de 8 días a contar de la fecha de la Asamblea.</p>
+</article>
+<article class="articulo" id="art-68">
+<p class="art-lead"><span class="art-num">Art. 68°.</span> Mandato. Los miembros titulares durarán cuatro años en sus funciones pudiendo ser reelectos por un periodo más, al cabo del cual deberá transcurrir un ejercicio económico financiero como mínimo para volver a ocupar cargos. Los suplentes durarán cuatro años y podrán ser también reelectos, salvo que pasen a ocupar la titularidad en forma definitiva para completar el período del reemplazado.</p>
+</article>
+<article class="articulo" id="art-69">
+<p class="art-lead"><span class="art-num">Art. 69°.</span> Sesiones. El Consejo de Administración se reunirá obligatoriamente cada (15) quince días en forma ordinaria, sin necesidad de convocatoria previa. Extraordinariamente, podrá reunirse cuantas veces lo crea necesario el Presidente o lo pidan tres de sus miembros titulares o la Junta de Vigilancia. La asistencia a las sesiones será obligatoria para los miembros titulares y para los miembros suplentes. Los miembros suplentes tendrán derecho a voz en todas las deliberaciones, pero no tendrán voto, salvo cuando deban integrar el quórum por ausencia de un titular según el orden de prelación. Su asistencia regular será considerada como mérito para futuras elecciones o designaciones.</p>
+</article>
+<article class="articulo" id="art-70">
+<p class="art-lead"><span class="art-num">Art. 70°.</span> Quórum Legal. Tres de los miembros titulares constituirán quórum para las sesiones, las que serán presididas por el Presidente y a la falta de este por el Vicepresidente. El miembro que presida ostenta el derecho de emitir voto dirimente en caso de empate. El Consejo adoptará sus decisiones por simple mayoría de votos como cuerpo colegiado. Los suplentes presentes serán registrados en el acta, tendrán derecho a voz, pero no computarán para el quórum ni tendrán derecho a voto, a menos que ocupen una vacancia temporal o definitiva.</p>
+</article>
+<article class="articulo" id="art-71">
+<p class="art-lead"><span class="art-num">Art. 71°.</span> Dietas. El monto de la dieta, que será igual para todos sus miembros titulares sin tomar consideración el cargo que ocupen, será determinado por la Asamblea. Prohibición expresa a los directivos de percibir dietas hasta el cierre del segundo ejercicio económico, y siempre y cuando la gestión reflejada en los estados financieros arroje Excedente positivo. Tampoco se abonará suma alguna en concepto de dieta a los que faltaren a las sesiones. Esto solo aplica a los Cargo electivo o autoridades de los Consejos de Administración y Vigilancia. La dieta es un derecho exclusivo de los miembros titulares en ejercicio. La asistencia de los miembros suplentes a las sesiones no genera derecho a remuneración o dieta, salvo que deban asumir la titularidad por ausencia definitiva o temporal del titular.</p>
+</article>
+<article class="articulo" id="art-72">
+<p class="art-lead"><span class="art-num">Art. 72°.</span> Asistencia. La asistencia de los miembros titulares es obligatoria; la ausencia injustificada a tres sesiones consecutivas o cinco alternadas en el año dará lugar a los procedimientos de remoción estipulados en LA LEY.</p>
+</article>
+<article class="articulo" id="art-73">
+<p class="art-lead"><span class="art-num">Art. 73°.</span> Responsabilidad. Los miembros del Consejo responden personal y solidariamente para con la cooperativa y terceros por la inejecución o mal desempeño del mandato que ejercen y por la violación del estatuto o leyes, quedando exentos aquellos que dejaron constancia en acta de su voto en disidencia. La responsabilidad se extiende a miembros de la Junta de Vigilancia por los actos y omisiones que no hubiesen objetado oportunamente.</p>
+</article>
+<article class="articulo" id="art-74">
+<p class="art-lead"><span class="art-num">Art. 74°.</span> Todas las actuaciones del Consejo de Administración y Resoluciones tomadas deben ser consignadas en actas y firmadas por los miembros presentes.</p>
+</article>
+<article class="articulo" id="art-75">
+<p class="art-lead"><span class="art-num">Art. 75°.</span> Recurso de Reconsideración. Los socios afectados directamente por las resoluciones del Consejo de Administración podrán interponer el recurso de reconsideración en el término de cinco días hábiles. El Consejo se pronunciará en el término de diez días hábiles; en caso de silencio se reputará denegado el recurso, habilitando la apelación ante la Asamblea.</p>
+</article>
+<article class="articulo" id="art-76">
+<p class="art-lead"><span class="art-num">Art. 76°.</span> Ninguno de los miembros del Consejo de Administración podrá gozar de ventajas y privilegios fundados en esas circunstancias.</p>
+</article>
+<article class="articulo" id="art-77">
+<p class="art-lead"><span class="art-num">Art. 77°.</span> Funciones del Consejo de Administración. Corresponde al Consejo de Administración organizar el funcionamiento institucional, designar al Gerente, decidir sobre acciones judiciales, contraer préstamos dentro de los límites autorizados por la Asamblea, decidir sobre la admisión, retiro voluntario o exclusión de socios, preparar proyectos de reforma del estatuto y convocar a las Asambleas de Socios.</p>
+</article>
+<article class="articulo" id="art-78">
+<p class="art-lead"><span class="art-num">Art. 78°.</span> Funciones Implícitas. Se consideran facultades implícitas del Consejo de Administración todas aquellas que LA LEY o este Estatuto no reserven expresamente a la Asamblea.</p>
+</article>
+<article class="articulo" id="art-79">
+<p class="art-lead"><span class="art-num">Art. 79°.</span> Del Presidente. Es la autoridad encargada de presidir las sesiones del Consejo, convocar extraordinarias, suscribir documentos oficiales y títulos conjuntamente con el Tesorero o Secretario, y tomar medidas de extrema urgencia con cargo de rendir cuenta al Consejo.</p>
+</article>
+<article class="articulo" id="art-80">
+<p class="art-lead"><span class="art-num">Art. 80°.</span> Del Vicepresidente. Reemplazará al Presidente en caso de ausencia o impedimento y asumirá la Presidencia del Comité de Créditos, además de encargarse de las relaciones públicas institucionales.</p>
+</article>
+<article class="articulo" id="art-81">
+<p class="art-lead"><span class="art-num">Art. 81°.</span> Del Secretario. Encargado de redactar las actas de sesiones y asambleas, llevar la correspondencia oficial, refrendar los documentos firmados por el Presidente y mantener actualizado el Libro de Registro de Socios.</p>
+</article>
+<article class="articulo" id="art-82">
+<p class="art-lead"><span class="art-num">Art. 82°.</span> Del Tesorero. Encargado de vigilar las registraciones contables, intervenir en la confección de los balances institucionales, resguardar los fondos y firmar de manera conjunta los valores, cheques y obligaciones financieras emitidas por la cooperativa.</p>
+</article>
+<article class="articulo" id="art-83">
+<p class="art-lead"><span class="art-num">Art. 83°.</span> De los Vocales. Sustituirán por su orden de elección a los miembros titulares que se encontraren ausentes, con permiso o incapacitados temporales.</p>
+</article>
+<h3 class="seccion-head">Sección III — De la Junta de Vigilancia</h3>
+<article class="articulo" id="art-84">
+<p class="art-lead"><span class="art-num">Art. 84°.</span> Naturaleza de la Junta. Es el órgano encargado de controlar las actividades económicas y sociales de la Cooperativa, actuando de forma ilimitada y permanente sobre las operaciones, pero sin intervenir en la gestión administrativa.</p>
+</article>
+<article class="articulo" id="art-85">
+<p class="art-lead"><span class="art-num">Art. 85°.</span> Composición y Elección. Compuesta por cinco miembros titulares y dos suplentes electos por votación secreta en Asamblea, durando cuatro años en sus funciones. Se estructurará con un Presidente, Vicepresidente, Secretario y dos Vocales.</p>
+</article>
+<article class="articulo" id="art-86">
+<p class="art-lead"><span class="art-num">Art. 86°.</span> Funcionamiento Se reunirá por lo menos una vez cada quince días con un quórum de tres titulares... Es obligatoria la asistencia de los miembros suplentes de la Junta de Vigilancia a todas las reuniones. Estos tendrán derecho a voz en las sesiones, pero carecerán de voto, salvo en caso de reemplazo de un titular Sus resoluciones se asentarán en actas firmadas por los asistentes. La reducción de miembros a menos de tres titulares obligará a convocar a una Asamblea General Extraordinaria en un plazo máximo de 20 días para llenar las vacancias.</p>
+</article>
+<article class="articulo" id="art-87">
+<p class="art-lead"><span class="art-num">Art. 87°.</span> Funciones. Fiscalizar la dirección, examinar los libros contables cada tres meses, verificar disponibilidades, presentar informe y dictamen fundado a la Asamblea Ordinaria sobre el Balance y estados financieros, e investigar denuncias escritas formuladas por los socios.</p>
+</article>
+<h3 class="seccion-head">Sección IV — Del Tribunal Electoral Independiente</h3>
+<article class="articulo" id="art-88">
+<p class="art-lead"><span class="art-num">Art. 88°.</span> Naturaleza, Composición y Mandato. Encargado de organizar, fiscalizar, juzgar y proclamar los comicios en las elecciones de la cooperativa. Compuesto por tres miembros titulares y un suplente electos en Asamblea por un mandato de cuatro (4) años. Rigen para sus miembros los mismos requisitos e impedimentos fijados para los consejeros en los artículos 65° y 66° de este estatuto.</p>
+</article>
+<article class="articulo" id="art-89">
+<p class="art-lead"><span class="art-num">Art. 89°.</span> Funciones y Reglamento. Elaborar el Reglamento Electoral, fijar el calendario de comicios, oficializar padrones, habilitar candidaturas, fiscalizar el escrutinio y proclamar a las autoridades electas.</p>
+</article>
+<article class="articulo" id="art-90">
+<p class="art-lead"><span class="art-num">Art. 90°.</span> Inicio de Actividades. El Tribunal Electoral Independiente quedará conformado y comenzará a funcionar una vez que la Cooperativa llegue a tener 400 socios activos.</p>
+</article>
+<h3 class="seccion-head">Sección V — De los comités auxiliares</h3>
+<h4 class="sub-head">Del Comité de Crédito</h4>
+<article class="articulo" id="art-91">
+<p class="art-lead"><span class="art-num">Art. 91°.</span> Organización. Organismo auxiliar del Consejo de Administración compuesto por 3 (tres) miembros designados por este (Presidente, Secretario y Vocal) que durarán 2 (dos) años en sus funciones. Se reunirá conforme a la afluencia de solicitudes; el quórum se constituirá con la presencia de un mínimo de dos (2) de sus miembros, y las decisiones se tomaran por unanimidad de los presentes.</p>
+</article>
+<article class="articulo" id="art-92">
+<p class="art-lead"><span class="art-num">Art. 92°.</span> Funciones. Estudiar carpetas de solicitudes de crédito, aprobar de forma directa los créditos que entren dentro de su escala reglamentaria e informar mensualmente al Consejo de Administración sobre la morosidad y colocación de carteras. En caso de rechazo, el socio podrá apelar ante el Consejo.</p>
+</article>
+<h4 class="sub-head">Del Comité de Educación</h4>
+<article class="articulo" id="art-93">
+<p class="art-lead"><span class="art-num">Art. 93°.</span> Naturaleza. Organismo encargado de ejecutar programas de difusión y capacitación cooperativa, integrado por 5 (cinco) miembros designados de forma directa por el Consejo de Administración cada 2 (dos) años. Utilizará el Fondo de Fomento de Educación rindiendo cuentas documentadas al Consejo.</p>
+</article>
+<article class="articulo" id="art-94">
+<p class="art-lead"><span class="art-num">Art. 94°.</span> Funciones. Desarrollar jornadas de formación, promover la integración institucional, elaborar proyectos presupuestarios para actividades pedagógicas y presentar informes anuales al Consejo dentro de los 15 días posteriores al cierre del ejercicio.</p>
+</article>
+<h4 class="sub-head">De los otros comités auxiliares</h4>
+<article class="articulo" id="art-95">
+<p class="art-lead"><span class="art-num">Art. 95°.</span> Otros Comités. El Consejo de Administración podrá constituir otros comités temporales o permanentes fijándoles deberes específicos, con una duración máxima de 2 (dos) año en sus funciones. El Consejo de Administración tiene la facultad de remover a los miembros de los comités auxiliares en cualquier momento mediante resolución fundada, ante el incumplimiento reiterado de sus funciones, inasistencias injustificadas, o por pérdida de confianza. En tales casos, el Consejo procederá a la designación de un reemplazante para completar el periodo de mandato.</p>
+</article>
+<h4 class="sub-head">De la Gerencia</h4>
+<article class="articulo" id="art-96">
+<p class="art-lead"><span class="art-num">Art. 96°.</span> Designación del Gerente. El Consejo de Administración designará uno o más Gerentes que se encargarán de la ejecución de sus decisiones y del manejo de los negocios ordinarios y normales de la Cooperativa.</p>
+</article>
+</div>
+<section class="capitulo" id="cap-VII">
+<div class="capitulo-head"><span class="capitulo-num">Capítulo VII</span><h2>Del régimen de servicios</h2></div>
+<div class="capitulo-body">
+<article class="articulo" id="art-97">
+<p class="art-lead"><span class="art-num">Art. 97°.</span> Servicios. Para la realización de los fines y el logro de los objetivos indicados en los Art. 4º y 5º respectivamente, de este Estatuto, la Cooperativa podrá ejercer multiactividad que se refiera principalmente al Ahorro y Crédito y a los segmentos de los Servicios y del Consumo; toda vez que no sean contrarias a las leyes del país. En forma general la descripción es meramente enunciativa y es como sigue: Adquirir o producir para distribuir entre los socios todos los artículos o materiales necesarios; construir, adquirir o arrendar oficinas, locales, galpones, etc. para uso de la Cooperativa; asesorar técnica y jurídicamente a sus socios; adquirir, fabricar, importar directamente, instalar y distribuir toda clase de materiales, útiles, enseres, artefactos, tecnología de cualquier tipo, sea de Construcción, Industrial y de Servicios varios, productos y maquinarias pesadas, semi pesadas o livianas, Electrodomésticos; aceptar y emitir letras de cambio para sus propias importaciones y exportaciones; emprender y financiar actividades industriales y operaciones de construcción civil o vial; recibir de sus socios depósitos de dinero en caja de ahorro y aportaciones y concederles préstamos con garantía real o personal; vender a los socios y familiares mercaderías de uso profesional o de consumo doméstico a crédito; y realizar, en suma, todos los actos jurídicos que se relacionen con los fines de una Cooperativa Multiactiva. La cooperativa podrá actuar como canal de gestión, intermediación o importación directa de Maquinarias, vehículos, repuestos en general, herramientas e insumos en general de construcción o Industrial, tecnología varias por su cuenta y orden de sus asociados. Los bienes adquiridos o importados bajo esta modalidad pasaran a ser de propiedad Exclusiva del Socio Solicitante una vez liquidados los costos correspondientes, Queda Expresamente garantizado el derecho del socio a la libre disposición, enajenación, alquiler o reventa de dichos bienes a terceros o a otros Asociados, no obstante cuando la adquisición o importación sea financiada mediante crédito otorgado por la Cooperativa el bien quedara prendado a su favor conforme al Art. 99° y a la libre disposición del socio quedara condicionada a la cancelación total del crédito. La operación por cuenta y orden deberá contar con el respaldo documental del mandato del socio a los efectos aduaneros y tributarios, considerándose está un acto cooperativo de servicio y apoyo al desarrollo productivo del asociado.</p>
+</article>
+<article class="articulo" id="art-98">
+<p class="art-lead"><span class="art-num">Art. 98°.</span> Condiciones Operativas. Los depósitos se registrarán en libretas individuales. El Consejo fijará las tasas de interés pasivas y activas conforme a las normativas del INCOOP y las leyes del país. Se podrá establecer un sistema de capitalización por operaciones mediante recargo de hasta el 10% en préstamos para ser acreditado como aporte de capital.</p>
+</article>
+<article class="articulo" id="art-99">
+<p class="art-lead"><span class="art-num">Art. 99°.</span> Límites y Restricciones. Los préstamos se otorgarán exclusivamente a los socios y no podrán exceder, en ningún caso individual, el 5% (cinco por ciento) del capital integrado total de la Cooperativa. Queda prohibido cambiar el destino del crédito sin previa autorización, bajo pena de ejecución inmediata del saldo. Las cuotas en mora devengarán interés punitorio según el reglamento.</p>
+</article>
+</div>
+<section class="capitulo" id="cap-VIII">
+<div class="capitulo-head"><span class="capitulo-num">Capítulo VIII</span><h2>Del régimen disciplinario</h2></div>
+<div class="capitulo-body">
+<article class="articulo" id="art-100">
+<p class="art-lead"><span class="art-num">Art. 100°.</span> Faltas Leves. Son consideradas faltas leves las actitudes de protesta irrespetuosa, la negativa injustificada a ocupar cargos electivos, el retraso transitorio en obligaciones económicas o violaciones leves a los estatutos. Sanciones aplicables: apercibimiento por escrito, suspensión de hasta 3 meses o multas de 3 a 10 jornales mínimos (destinados al Fondo de Educación).</p>
+</article>
+<article class="articulo" id="art-101">
+<p class="art-lead"><span class="art-num">Art. 101°.</span> Faltas Graves. Malversación de fondos, desfalco, abuso de confianza, actividades de proselitismo político o religioso dentro de la entidad, agresión de hecho a directivos, destrucción material de bienes documentales, acoso, abuso y hostigamiento sexual. Sanciones aplicables: suspensión de seis meses a un año, inhabilitación para cargos electivos por un mandato o expulsión definitiva.</p>
+</article>
+<article class="articulo" id="art-102">
+<p class="art-lead"><span class="art-num">Art. 102°.</span> Procedimiento de Sumario. Toda sanción requiere la instrucción de un sumario previo llevado por un socio independiente como Juez Instructor. El sumariado tendrá 20 días para su descargo, y el Consejo emitirá resolución en un plazo de 15 días. Las resoluciones son apelables ante la primera Asamblea. Si la falta es cometida por directivos electos, el juzgamiento es competencia exclusiva de la Asamblea General de Socios.</p>
+</article>
+<article class="articulo" id="art-103">
+<p class="art-lead"><span class="art-num">Art. 103°.</span> Multas contra la Cooperativa. En caso de multas aplicadas por el INCOOP a la entidad por negligencia, la obligación de reparar el perjuicio económico será solidaria entre todos los miembros responsables del Consejo de Administración y de la Junta de Vigilancia, salvo resolución contraria de la Asamblea.</p>
+</article>
+</div>
+<section class="capitulo" id="cap-IX">
+<div class="capitulo-head"><span class="capitulo-num">Capítulo IX</span><h2>De la disolución y liquidación</h2></div>
+<div class="capitulo-body">
+<article class="articulo" id="art-104">
+<p class="art-lead"><span class="art-num">Art. 104°.</span> Causas de Disolución. La cooperativa se disolverá por acuerdo de dos tercios de socios en Asamblea Extraordinaria, reducción de socios por debajo del mínimo legal, pérdida del capital que impida operar, fusión o cancelación de personería por parte del INCOOP. La Asamblea nombrará una Comisión Liquidadora de tres socios junto con un delegado del INCOOP.</p>
+</article>
+<article class="articulo" id="art-105">
+<p class="art-lead"><span class="art-num">Art. 105°.</span> Operación de Liquidación. El nombre irá acompañado de la leyenda "EN LIQUIDACIÓN", cesando de inmediato los directivos en sus funciones administrativas. La comisión presentará un informe detallado al INCOOP en un plazo máximo de 30 días de haberse constituido.</p>
+</article>
+<article class="articulo" id="art-106">
+<p class="art-lead"><span class="art-num">Art. 106°.</span> Remanente. Liquidado el pasivo, el saldo se distribuirá devolviendo el valor nominal de los certificados de aportación a los socios y, si existiere remanente final, se destinará a una institución de beneficencia según decida la Asamblea.</p>
+</article>
+</div>
+<section class="capitulo" id="cap-X">
+<div class="capitulo-head"><span class="capitulo-num">Capítulo X</span><h2>De las disposiciones generales, transitorias y finales</h2></div>
+<div class="capitulo-body">
+<article class="articulo" id="art-107">
+<p class="art-lead"><span class="art-num">Art. 107°.</span> Inhabilidades y Prohibición de Garantía. Los directores del Consejo de Administración, de la Junta de Vigilancia, del Comité de Crédito y el Gerente no podrán ser codeudores ni garantes de obligaciones de otros socios mientras duren en el ejercicio de sus funciones directivas.</p>
+</article>
+<article class="articulo" id="art-108">
+<p class="art-lead"><span class="art-num">Art. 108°.</span> Interpretación y Modificaciones. Situaciones no previstas serán resueltas por el Consejo con cargo de rendir cuenta a la Asamblea. Las dudas de interpretación serán resueltas en reunión conjunta entre el Consejo de Administración y la Junta de Vigilancia. Las expresiones Cooperativa, Entidad e Institución se refieren unívocamente a la Cooperativa Multiactiva de Ahorro, Crédito, Construcción, Industria y Servicios Varios “Cimientos” Limitada.</p>
+</article>
+<article class="articulo" id="art-109">
+<p class="art-lead"><span class="art-num">Art. 109°.</span> Reforma de Estatuto y Solución de Diferendos. La reforma requiere el voto de las dos terceras partes (2/3) de los socios presentes en Asamblea Extraordinaria, debiendo distribuirse el borrador 15 días antes. Los conflictos insalvables entre socios y directivos se someterán en última instancia al arbitraje del Instituto Nacional de Cooperativismo.</p>
+</article>
+<article class="articulo" id="art-110">
+<p class="art-lead"><span class="art-num">Art. 110°.</span> Prevención de Lavado de Activos y Financiamiento del Terrorismo. Como sujeto obligatorio conforme a la Ley N° 1015/97 y sus modificatorias y a las resoluciones de la SEPRELAD y de INCOOP, la Cooperativa implementara un programa de prevención de lavados de activos y financiamiento del terrorismo Basado en la gestión de riesgos, designara un oficial de cumplimento y mantendrá las políticas de debida diligencia, registro y reporte exigidas por la normativa vigente.</p>
+</article>
+<article class="articulo" id="art-111">
+<p class="art-lead"><span class="art-num">Art. 111°.</span> Auditoria externa. La Cooperativa contratara anualmente una auditoría externa independiente, conforma a las exigencias del INCOOP según la tipología de la entidad, cuyo informa se pondrá a disposición de la asamblea ordinaria junto con el balance y el dictamen de la junta de vigilancia.</p>
+</article>
+</div></section>
+</main>
+
+<div class="doc-footer">
+  Este documento reproduce íntegramente el Estatuto Social de Cooperativa Cimientos Ltda. tal como fue registrado en su constitución. Ante cualquier diferencia, prevalece el ejemplar rubricado que obra en poder del Consejo de Administración y del INCOOP.
+</div>
+
+<a class="back-to-top" href="#top" title="Volver arriba">↑</a>
+
+<script>
+const statuteSearch=document.getElementById('statuteSearch'),articles=[...document.querySelectorAll('.articulo')],count=document.getElementById('searchCount');
+statuteSearch.addEventListener('input',()=>{const q=statuteSearch.value.trim().toLocaleLowerCase('es');let n=0;articles.forEach(a=>{const hit=!q||a.textContent.toLocaleLowerCase('es').includes(q);a.hidden=!hit;if(hit&&q)n++});count.textContent=q?`${n} artículo${n===1?'':'s'}`:'';document.querySelectorAll('.capitulo').forEach(c=>{c.hidden=!!q&&![...c.querySelectorAll('.articulo')].some(a=>!a.hidden)})});
+</script>
+</body>
+</html>
