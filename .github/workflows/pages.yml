@@ -1,0 +1,43 @@
+name: Deploy GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Prepare static site
+        run: |
+          mkdir -p _site/panel _site/formulario _site/estatuto-cimientos
+          cp -R public/. _site/
+          cp public/formulario.html _site/index.html
+          printf '%s' '<!doctype html><meta charset="utf-8"><meta http-equiv="refresh" content="0;url=../panel.html"><title>Panel Cimientos</title>' > _site/panel/index.html
+          printf '%s' '<!doctype html><meta charset="utf-8"><meta http-equiv="refresh" content="0;url=../formulario.html"><title>Formulario Cimientos</title>' > _site/formulario/index.html
+          printf '%s' '<!doctype html><meta charset="utf-8"><meta http-equiv="refresh" content="0;url=../estatuto-cimientos.html"><title>Estatuto Cimientos</title>' > _site/estatuto-cimientos/index.html
+          touch _site/.nojekyll
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+      - name: Upload site
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4
