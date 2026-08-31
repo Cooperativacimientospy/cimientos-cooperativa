@@ -11,7 +11,7 @@
 
 <div class="beta-topbar">
   <div><span class="beta-dot"></span><strong>Formulario en línea</strong><small>Envío seguro a la Cooperativa Cimientos</small></div>
-  <div class="beta-actions"><a href="estatuto-cimientos.html">Consultar estatuto</a></div>
+  <div class="beta-actions"><a id="adminReturnTop" href="panel.html" hidden>Volver al panel</a><a href="estatuto-cimientos.html">Consultar estatuto</a></div>
 </div>
 
 <div class="page">
@@ -356,7 +356,7 @@
         por WhatsApp o al correo que dejaste con el resultado.
       </p>
       <p class="muted" id="successRefHint">Guardá este número de solicitud como referencia.</p>
-      <p id="successCopyWrap"><button type="button" class="btn btn-ghost" id="copyRequestNumber">Copiar número de solicitud</button></p>
+      <div class="success-actions" id="successCopyWrap"><button type="button" class="btn btn-ghost" id="copyRequestNumber">Copiar número de solicitud</button><a class="btn btn-primary" id="adminReturnSuccess" href="panel.html" hidden>Volver al panel</a></div>
     </div>
   </div>
 </div>
@@ -393,7 +393,14 @@
 
   const LOCAL_SOLICITUDES_KEY = "cimientos_local_v1_solicitudes";
   const FECHA_CONSTITUCION = "2026-08-22";
-  const esFundador = new URLSearchParams(window.location.search).get("fundador") === "1";
+  const urlParams = new URLSearchParams(window.location.search);
+  const esFundador = urlParams.get("fundador") === "1";
+  const flujoAdministrativo = urlParams.get("admin") === "1";
+
+  if (flujoAdministrativo) {
+    document.getElementById("adminReturnTop").hidden = false;
+    document.getElementById("adminReturnSuccess").hidden = false;
+  }
 
   // ---------------- Modo Socio Fundador ----------------
   // Los socios fundadores ya integran la Cooperativa desde el Acta de la
@@ -878,6 +885,8 @@
       declaracion_jurada: document.getElementById("declaracion_jurada").checked,
       firma_base64: canvas.toDataURL("image/png"),
       tipo_socio: esFundador ? "fundador" : "ordinario",
+      origen_registro: flujoAdministrativo ? "presencial_panel" : "formulario_publico",
+      pre_registro_id: urlParams.get("preregistro") || null,
     };
 
     try {
