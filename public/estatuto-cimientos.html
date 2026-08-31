@@ -293,7 +293,7 @@
   @media(max-width:620px){
     .topbar{padding:9px 11px}.brand-text span{display:none}.topbar-actions{gap:5px}.topbar-actions a,.topbar-actions button{font-size:10px;padding:8px}.page-header{padding-top:30px}.articulo{padding:16px 15px;border-radius:16px}
   }
-.statute-search{position:sticky;top:78px;z-index:5;display:flex;align-items:center;gap:12px;margin:0 0 24px;padding:10px;border:1px solid rgba(32,33,36,.08);border-radius:18px;background:rgba(255,255,255,.88);backdrop-filter:blur(22px);box-shadow:0 12px 35px rgba(32,33,36,.08)}.statute-search input{flex:1;border:0;outline:0;background:transparent;padding:7px 10px;font:inherit}.statute-search span{color:#6a9c20;font-size:12px;font-weight:750;white-space:nowrap}.toc a:nth-child(4n+2) .toc-num{background:#eaf2ff;color:#3478f6}.toc a:nth-child(4n+3) .toc-num{background:#fff0df;color:#e56f00}.toc a:nth-child(4n+4) .toc-num{background:#f1e9fb;color:#8652c8}
+.statute-search{position:sticky;top:78px;z-index:5;display:flex;align-items:center;gap:12px;margin:0 0 24px;padding:10px;border:1px solid rgba(32,33,36,.08);border-radius:18px;background:rgba(255,255,255,.88);backdrop-filter:blur(22px);box-shadow:0 12px 35px rgba(32,33,36,.08)}.statute-search input{flex:1;border:0;outline:0;background:transparent;padding:7px 10px;font:inherit}.statute-search span{color:#6a9c20;font-size:12px;font-weight:750;white-space:nowrap}.toc a:nth-child(4n+2) .toc-num{background:#eef4e3;color:#4f8217}.toc a:nth-child(4n+3) .toc-num{background:#fff0df;color:#e56f00}.toc a:nth-child(4n+4) .toc-num{background:#f1e9fb;color:#8652c8}
 </style>
 </head>
 <body>
@@ -306,7 +306,7 @@
   </div>
   <div class="topbar-actions">
     <button type="button" onclick="window.print()">Imprimir / Guardar PDF</button>
-    <a href="formulario.html">← Volver al formulario</a>
+    <a id="volverFormulario" href="formulario.html">← Volver al formulario</a>
   </div>
 </div>
 
@@ -748,6 +748,13 @@
 <a class="back-to-top" href="#top" title="Volver arriba">↑</a>
 
 <script>
+// Conserva el contexto (?admin=1 / ?pre=<token> / ?fundador=1) con el que
+// se llegó desde el formulario, para que "Volver al formulario" no
+// aterrice en el modo público genérico perdiendo esa sesión (P1 #32).
+if (window.location.search) {
+  const volver = document.getElementById('volverFormulario');
+  if (volver) volver.href = 'formulario.html' + window.location.search;
+}
 const statuteSearch=document.getElementById('statuteSearch'),articles=[...document.querySelectorAll('.articulo')],count=document.getElementById('searchCount');
 statuteSearch.addEventListener('input',()=>{const q=statuteSearch.value.trim().toLocaleLowerCase('es');let n=0;articles.forEach(a=>{const hit=!q||a.textContent.toLocaleLowerCase('es').includes(q);a.hidden=!hit;if(hit&&q)n++});count.textContent=q?`${n} artículo${n===1?'':'s'}`:'';document.querySelectorAll('.capitulo').forEach(c=>{c.hidden=!!q&&![...c.querySelectorAll('.articulo')].some(a=>!a.hidden)})});
 </script>

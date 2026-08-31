@@ -1225,3 +1225,103 @@ body { background: radial-gradient(circle at 92% 3%, rgba(106,156,32,.09), trans
   .btn-nav-row { position: sticky; bottom: 10px; z-index: 20; padding: 8px; border: 1px solid var(--ios-line); background: rgba(255,255,255,.88); border-radius: 17px; backdrop-filter: blur(20px); }
   .success-screen { min-height: 330px; padding: 28px 8px; }
 }
+
+/* ============================================================
+   Corrección final — auditoría P1 #16/#17: radios y checkboxes
+   nativos sin estilo (algunos navegadores los renderizan enormes
+   al combinarlos con accent-color), foco azul heredado del
+   navegador en vez de institucional, y reducción ~10% del
+   contenido principal manteniendo el objetivo táctil mínimo de
+   44px que pide la propia auditoría.
+   ============================================================ */
+
+/* Controles pintados a mano: tamaño fijo garantizado en cualquier
+   navegador/SO, en vez de depender del tamaño nativo del widget. */
+.choice input[type="radio"],
+.choice input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 20px;
+  height: 20px;
+  min-width: 20px;
+  min-height: 20px;
+  margin: 0;
+  flex: 0 0 auto;
+  border: 1.5px solid rgba(46, 46, 46, 0.28);
+  background: #fff;
+  cursor: pointer;
+  position: relative;
+  transition: border-color 0.15s, background 0.15s;
+}
+.choice input[type="radio"] { border-radius: 50%; }
+.choice input[type="checkbox"] { border-radius: 5px; }
+.choice input[type="radio"]:checked,
+.choice input[type="checkbox"]:checked {
+  border-color: var(--green);
+  background: var(--green);
+}
+.choice input[type="radio"]:checked::after {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  border-radius: 50%;
+  background: #fff;
+}
+.choice input[type="checkbox"]:checked::after {
+  content: "";
+  position: absolute;
+  left: 6px;
+  top: 2px;
+  width: 5px;
+  height: 10px;
+  border: solid #fff;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+/* Orden de lectura estable: control a la izquierda, texto al lado,
+   sin depender de "centrar el grupo" (con contenido de ancho
+   variable eso podía dejar el texto pegado al borde derecho). */
+.choice,
+.choice-row .choice,
+.choice-group .choice {
+  justify-content: flex-start;
+  gap: 10px;
+}
+
+/* Foco institucional en vez del azul por defecto del navegador
+   (auditoría P1 #16: "focus azul"). */
+.btn:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+.choice:focus-within {
+  outline: 2px solid var(--green);
+  outline-offset: 2px;
+}
+.btn:focus:not(:focus-visible) { outline: none; }
+
+/* Reducción ~10% del contenido principal (no se toca el layout ni
+   el ancho de página) — piso de 44px táctil en botones y campos. */
+.step-title { font-size: clamp(25px, 2.7vw, 34px); }
+.card { padding: clamp(20px, 3.6vw, 41px); }
+.field input, .field select, .field textarea { min-height: 46px; padding: 12px 14px; }
+.choice-row .choice, .choice-group .choice { min-height: 46px; padding: 11px 14px; }
+.btn { min-height: 44px; padding: 0 16px; }
+.beta-topbar { min-height: 52px; }
+
+/* Responsive real: hasta 360px de ancho nada se corta ni se sale
+   de la pantalla. */
+@media (max-width: 480px) {
+  .step-title { font-size: clamp(22px, 6vw, 27px); }
+  .card { padding: 18px 14px; }
+  .field input, .field select, .field textarea { min-height: 44px; font-size: 14.5px; }
+  .btn-nav-row .btn-ghost { padding: 0 14px; }
+  .estatuto-link .estatuto-text strong { font-size: 12.5px; }
+  .estatuto-link .estatuto-go { display: none; }
+}
+@media (max-width: 360px) {
+  .page { padding-inline: 10px; }
+  .card { padding: 16px 12px; }
+  .choice-row .choice, .choice-group .choice { padding: 10px 12px; }
+}

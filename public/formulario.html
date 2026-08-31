@@ -11,7 +11,7 @@
 
 <div class="beta-topbar">
   <div><span class="beta-dot"></span><strong>Formulario en línea</strong><small>Envío seguro a la Cooperativa Cimientos</small></div>
-  <div class="beta-actions"><a id="adminReturnTop" href="panel.html" hidden>Volver al panel</a><a href="estatuto-cimientos.html">Consultar estatuto</a></div>
+  <div class="beta-actions"><a id="adminReturnTop" href="panel.html" hidden>Volver al panel</a><a id="estatutoLinkTop" href="estatuto-cimientos.html">Consultar estatuto</a></div>
 </div>
 
 <div class="page">
@@ -298,7 +298,7 @@
             </div>
           </div>
 
-          <a class="estatuto-link" href="estatuto-cimientos.html" target="_blank" rel="noopener">
+          <a class="estatuto-link" id="estatutoLinkMid" href="estatuto-cimientos.html" target="_blank" rel="noopener">
             <span class="estatuto-icon">📄</span>
             <span class="estatuto-text">
               <strong>Leé el Estatuto Social antes de firmar</strong>
@@ -402,6 +402,17 @@
     document.getElementById("adminReturnSuccess").hidden = false;
   }
 
+  // Conservar el contexto (?admin=1 / ?pre=<token> / ?fundador=1) al ir al
+  // Estatuto y volver — antes el link perdía la query string y quien
+  // volvía aterrizaba en el formulario genérico, sin el modo con el que
+  // había entrado (auditoría P1 #32).
+  if (window.location.search) {
+    ["estatutoLinkTop", "estatutoLinkMid"].forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) el.href = "estatuto-cimientos.html" + window.location.search;
+    });
+  }
+
   // ---------------- Modo Socio Fundador ----------------
   // Los socios fundadores ya integran la Cooperativa desde el Acta de la
   // Asamblea Constitutiva (22/08/2026): no presentan una solicitud de
@@ -422,6 +433,16 @@
     if (referenteSummary && referenteSummary.closest(".summary-group")) referenteSummary.closest(".summary-group").remove();
     const declaracionText = document.getElementById("declaracionText");
     if (declaracionText) declaracionText.textContent = "Declaro bajo fe de juramento que los datos consignados son veraces y que los fondos provienen de actividades lícitas (SEPRELAD). Leí y acepto el Estatuto Social, y confirmo mis datos como Socio Fundador de la Cooperativa Cimientos Ltda., conforme al Acta de la Asamblea Constitutiva. *";
+    // La nómina fundacional puede cerrarse desde el panel (Configuraciones
+    // → Admisión). Una vez cerrada, este link deja de aceptar altas nuevas.
+    if (supabaseReady) {
+      supabaseClient.from("configuracion_institucional").select("cierre_fundacional").eq("id", 1).maybeSingle().then(({ data }) => {
+        if (data && data.cierre_fundacional) {
+          const fv = document.getElementById("formView");
+          if (fv) fv.innerHTML = '<div class="card" style="padding:28px;text-align:center"><h2 style="margin:0 0 8px">La nómina fundacional ya está cerrada</h2><p style="color:var(--muted,#72767d)">Si necesitás corregir tus datos como socio fundador, escribile directamente al Consejo de Administración.</p></div>';
+        }
+      });
+    }
   }
 
   document.getElementById("copyRequestNumber").addEventListener("click", async () => {
@@ -747,21 +768,28 @@
   })();
 
   // Si llegaste con un link de pre-registro (compartido desde el panel del
-  // Consejo), prellenamos nombre y celular — pero nunca pisamos un borrador
-  // propio que ya tenga contenido.
-  (function prefillFromLink() {
+  // Consejo), el link nunca lleva nombre ni celular en la URL — solo un
+  // token opaco y temporal (?pre=...) que se resuelve del lado del
+  // servidor. Nunca pisamos un borrador propio que ya tenga contenido.
+  let preRegistroId = null;
+  const preToken = urlParams.get("pre");
+  (async function prefillFromToken() {
+    if (!preToken || !supabaseClient) return;
     try {
-      const params = new URLSearchParams(window.location.search);
-      const nombre = params.get("nombre");
-      const celular = params.get("celular");
-      if (!nombre && !celular) return;
+      const { data, error } = await supabaseClient.rpc("fn_resolver_token_preregistro", { p_token: preToken });
+      if (error) throw error;
+      const row = Array.isArray(data) ? data[0] : data;
+      if (!row) return; // token vencido o inválido: seguimos con el formulario en blanco
+      preRegistroId = row.pre_registro_id;
       const existing = loadRawDraft();
       const hasOwnContent = existing && existing.fields && (existing.fields.apellidos_nombres || existing.fields.cedula);
-      if (hasOwnContent) return;
-      if (nombre) document.getElementById("apellidos_nombres").value = nombre;
-      if (celular) document.getElementById("celular_whatsapp").value = celular;
+      if (!hasOwnContent) {
+        if (row.nombre_contacto) document.getElementById("apellidos_nombres").value = row.nombre_contacto;
+        if (row.celular_whatsapp) document.getElementById("celular_whatsapp").value = row.celular_whatsapp;
+      }
+      supabaseClient.rpc("fn_marcar_preregistro_iniciado", { p_token: preToken }).catch(() => {});
     } catch (e) {
-      /* URL inválida o localStorage no disponible: seguimos sin prellenar */
+      /* token inválido, vencido o sin conexión: seguimos sin prellenar */
     }
   })();
 
@@ -886,7 +914,7 @@
       firma_base64: canvas.toDataURL("image/png"),
       tipo_socio: esFundador ? "fundador" : "ordinario",
       origen_registro: flujoAdministrativo ? "presencial_panel" : "formulario_publico",
-      pre_registro_id: urlParams.get("preregistro") || null,
+      pre_registro_id: preRegistroId || null,
     };
 
     try {
@@ -925,6 +953,10 @@
         if (supabaseReady) {
           const result = await insertRemote("solicitudes_socios", payload);
           document.getElementById("successNumero").innerText = result && result.referencia ? result.referencia : "RECIBIDA";
+          if (preToken) {
+            const solicitudId = result && (result.id || result.solicitud_id) || null;
+            supabaseClient.rpc("fn_marcar_preregistro_completado", { p_token: preToken, p_solicitud_id: solicitudId }).catch(() => {});
+          }
         } else {
           payload.id = "local-" + Date.now();
           payload.numero_solicitud = numeroSolicitud;

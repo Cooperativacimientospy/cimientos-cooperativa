@@ -13,6 +13,22 @@
     SUPABASE_URL && SUPABASE_ANON_KEY &&
     !String(SUPABASE_URL).startsWith("PONE_ACA") &&
     !String(SUPABASE_ANON_KEY).startsWith("PONE_ACA");
+
+  // Base para armar links absolutos (WhatsApp de pre-registro, etc.).
+  // location.origin solo sirve cuando el panel se abre desde la web real
+  // (https://tu-dominio). Si alguien abre panel.html como archivo local
+  // (doble clic, o "Abrir archivo" del navegador), location.origin es
+  // "file://" y cualquier link armado con eso queda roto
+  // ("file:///formulario", no llega a ningún lado). En ese caso usamos
+  // SITE_URL de config.js si está cargada; si no, avisamos en vez de
+  // generar un link inútil.
+  function siteOrigin() {
+    if (typeof SITE_URL !== "undefined" && SITE_URL && !String(SITE_URL).startsWith("PONE_ACA")) {
+      return String(SITE_URL).replace(/\/+$/, "");
+    }
+    if (location.protocol === "http:" || location.protocol === "https:") return location.origin;
+    return null;
+  }
   const DEFAULTS = { green: "#6a9c20", orange: "#ff7a00", bg: "#f3f4f1", proximoSocio: 1, administrador: "Administrador local", correoAdministrador: "", cargoAdministrador: "Superadministrador", fotoAdministrador: "" };
   const $ = (s) => document.querySelector(s);
   const $$ = (s) => Array.from(document.querySelectorAll(s));
@@ -33,6 +49,15 @@
   let filter = "todos";
   let memberFilter = "todos";
   let dark = false;
+  // Configuración institucional (próximo N.º de socio, cierre de la
+  // nómina fundacional, mensaje, derecho de admisión) y el perfil de
+  // quien está logueado: cuando hay Supabase, viven en el servidor,
+  // no en este navegador — ver supabase-migracion-p0.sql.
+  let configInstitucional = null;
+  let perfilActual = null;
+  function rolActual() { return perfilActual ? perfilActual.rol : "superadministrador"; }
+  function puedeGestionar() { return rolActual() !== "lectura"; }
+  function esSuperadmin() { return rolActual() === "superadministrador"; }
 
   // ---------------- Supabase (opcional) ----------------
   // Mientras config.js tenga los valores de ejemplo "PONE_ACA_...", el
@@ -77,6 +102,24 @@
     } catch (err) { console.error("Supabase (carga inicial):", err); }
   }
 
+  async function cargarConfigInstitucional() {
+    if (!supabaseClient) return;
+    try {
+      const { data, error } = await supabaseClient.from("configuracion_institucional").select("*").eq("id", 1).maybeSingle();
+      if (error) { console.error("Supabase (configuracion_institucional):", error.message); return; }
+      configInstitucional = data || null;
+    } catch (err) { console.error("Supabase (configuracion_institucional):", err); }
+  }
+
+  async function cargarPerfilActual() {
+    if (!supabaseClient) return;
+    try {
+      const { data, error } = await supabaseClient.rpc("fn_asegurar_perfil");
+      if (error) { console.error("Supabase (perfil):", error.message); return; }
+      perfilActual = data;
+    } catch (err) { console.error("Supabase (perfil):", err); }
+  }
+
   function saveSolicitudes(changed) { write(KEYS.solicitudes, solicitudes); if (changed) upsertRemote(TABLES.solicitudes, changed); }
   function saveLeads(changed) { write(KEYS.leads, leads); if (changed) upsertRemote(TABLES.leads, changed); }
   function log(texto) {
@@ -88,7 +131,7 @@
   }
   function toast(msg) { const e = $("#toast"); e.textContent = msg; e.classList.add("show"); setTimeout(() => e.classList.remove("show"), 1900); }
   function go(name) { $$(".view").forEach((v) => v.classList.toggle("active", v.id === "view-" + name)); $$('[data-go]').forEach((b) => b.classList.toggle("active", b.dataset.go === name)); if (name === "inicio") renderHome(); if (name === "socios") renderMembers(); if (name === "actividad") renderActivity(); window.scrollTo({ top: 0, behavior: "smooth" }); }
-  function badge(s) { const labels = { pendiente: "Pendiente", observado: "Observada", observada: "Observada", aprobado: "Aprobada", rechazado: "Rechazada", enviado: "Link enviado", completado: "Completado", descartado: "Descartado", activo: "Activo" }; const cls = s === "observado" ? "observada" : s; return `<span class="badge ${esc(cls)}">${labels[s] || esc(s)}</span>`; }
+  function badge(s) { const labels = { pendiente: "Pendiente", observado: "Observada", observada: "Observada", aprobado: "Aprobada", rechazado: "Rechazada", enviado: "Link preparado", preparado: "Link preparado", iniciado: "Formulario iniciado", completado: "Completado", descartado: "Descartado", activo: "Activo" }; const cls = s === "observado" ? "observada" : (s === "enviado" ? "preparado" : s); return `<span class="badge ${esc(cls)}">${labels[s] || esc(s)}</span>`; }
   function modal(title, html) { $("#modalTitle").textContent = title; $("#modalBody").innerHTML = html; $("#modalBack").classList.add("open"); }
   function closeModal() { $("#modalBack").classList.remove("open"); }
   function nombre(r) { return r.apellidos_nombres || r.nombre || "Sin nombre"; }
@@ -142,7 +185,7 @@
 
   function renderHome() {
     const pendientes = solicitudes.filter((r) => r.estado === "pendiente").length;
-    const abiertos = leads.filter((r) => ["pendiente", "enviado"].includes(r.estado)).length;
+    const abiertos = leads.filter((r) => ["pendiente", "enviado", "preparado", "iniciado"].includes(r.estado)).length;
     const socios = solicitudes.filter((r) => r.estado === "aprobado").length;
     const kpis = $$("#view-inicio .kpi strong");
     if (kpis[0]) kpis[0].textContent = pendientes;
@@ -151,7 +194,7 @@
     if (kpis[3]) kpis[3].textContent = actividad.length;
     const alertas = [];
     if (pendientes) alertas.push(`<div class="item"><span class="dot"></span><div class="item-main"><strong>${pendientes} solicitud(es) esperan revisión</strong><small>Abrí Admisión para continuar.</small></div>${badge("pendiente")}</div>`);
-    if (abiertos) alertas.push(`<div class="item"><span class="dot" style="background:var(--blue)"></span><div class="item-main"><strong>${abiertos} pre-registro(s) necesitan seguimiento</strong><small>Podés preparar el mensaje de WhatsApp.</small></div>${badge("enviado")}</div>`);
+    if (abiertos) alertas.push(`<div class="item"><span class="dot" style="background:var(--violet)"></span><div class="item-main"><strong>${abiertos} pre-registro(s) necesitan seguimiento</strong><small>Podés preparar el mensaje de WhatsApp.</small></div>${badge("enviado")}</div>`);
     const fundadoresPendientes = solicitudes.filter((r) => r.datos_pendiente_revision).length;
     if (fundadoresPendientes) alertas.push(`<div class="item"><span class="dot" style="background:var(--orange)"></span><div class="item-main"><strong>${fundadoresPendientes} fundador(es) enviaron sus datos por el link</strong><small>Revisalos en Socios y confirmá su número de socio.</small></div><span class="badge pendiente">Por revisar</span></div>`);
     const aprobadosSinNumero = solicitudes.filter((r) => r.estado === "aprobado" && !r.numero_socio && !r.datos_pendiente_revision).length;
@@ -162,6 +205,7 @@
     $("#dashEstadoTitulo").textContent = pendientes || abiertos ? "Hay gestiones para revisar" : "La operación está al día";
     $("#dashEstadoNota").textContent = pendientes || abiertos ? `${pendientes} solicitudes y ${abiertos} contactos abiertos.` : "Registrá una solicitud o pre-registro para comenzar.";
     $("#dashPedidos").textContent = solicitudes.length;
+    $("#bellBtn")?.classList.toggle("has-alert", pendientes + abiertos > 0);
   }
 
   function renderRequests() {
@@ -181,7 +225,12 @@
       wirePhotoPicker(r);
       if (tel(r)) $("#reqWhatsApp").onclick = () => shareMemberWhatsApp(r);
       $("#reqPrint").onclick = () => printRequest(r);
-      $("#reqReview").onclick = () => { closeModal(); fundadorModal(r); };
+      $("#reqReview").onclick = () => {
+        if (!pendiente && configInstitucional && configInstitucional.cierre_fundacional && !esSuperadmin()) {
+          return toast("La nómina fundacional está cerrada: solo un superadministrador puede corregir datos de un fundador ya confirmado");
+        }
+        closeModal(); fundadorModal(r);
+      };
       return;
     }
     modal(`Solicitud #${r.numero_solicitud || "—"}`, `${photoPickerHtml(r)}<div class="detailgrid">${detail("Solicitante", nombre(r))}${detail("Cédula", r.cedula)}${detail("Nacimiento", fmtDate(r.fecha_nacimiento))}${detail("Celular", tel(r))}${detail("Contacto preferido", r.contacto_preferido)}${detail("Ciudad", [r.ciudad, r.departamento].filter(Boolean).join(", "))}${detail("Dirección", r.direccion)}${detail("Vivienda", r.tipo_vivienda)}${detail("Actividad", r.condicion_laboral)}${detail("Empresa / RUC", r.empresa_ruc)}${detail("Cargo", r.cargo_laboral)}${detail("Antigüedad laboral", r.antiguedad_laboral)}${detail("Dirección laboral", r.direccion_laboral)}${detail("Cargo público/político", r.cargo_publico)}${detail("Trabajo en ONG", r.trabajo_ong)}${detail("Origen de fondos", r.origen_fondos)}${detail("Referente", r.referente_nombre)}${detail("Forma de pago", r.forma_pago)}${detail("Derecho de admisión", fmtGs(r.derecho_admision || 150000))}${detail("Beneficiarios", beneficiaries)}</div><div class="formfield"><label>Notas administrativas</label><textarea id="requestNotes" rows="3" style="width:100%;border:1px solid var(--line);border-radius:12px;padding:10px">${esc(r.notas_admin || "")}</textarea></div><div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;margin-top:16px"><button class="btn btn-whatsapp" id="reqWhatsApp">WhatsApp</button><button class="btn btn-secondary" id="reqPrint">Imprimir ficha</button><button class="btn btn-secondary" id="reqObserve">Observar</button><button class="btn" style="background:var(--danger);color:white" id="reqReject">Rechazar</button><button class="btn btn-primary" id="reqApprove">Aprobar</button></div>`);
@@ -192,6 +241,10 @@
     $("#reqReject").onclick = () => updateRequest(r, "rechazado");
     $("#reqApprove").onclick = () => approveRequest(r);
   }
+  function requireProfileGuard() {
+    if (supabaseClient && !puedeGestionar()) { toast("Tu rol (solo lectura) no permite hacer esto"); return false; }
+    return true;
+  }
   function shareMemberWhatsApp(r) {
     const phone=String(tel(r)||"").replace(/\D/g,"").replace(/^0/,"595");
     if(!phone)return toast("El socio no tiene un número de WhatsApp");
@@ -199,15 +252,57 @@
     window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`,"_blank");
     log(`Se preparó el envío de ficha por WhatsApp para ${nombre(r)}`);
   }
-  function updateRequest(r, estado) {
-    r.estado = estado; r.notas_admin = $("#requestNotes").value.trim(); r.revisado_por = config.administrador; r.fecha_revision = now(); saveSolicitudes(r); log(`${config.administrador} marcó como ${estado} la solicitud de ${nombre(r)}`); closeModal(); renderAll(); toast("Solicitud actualizada");
+  async function updateRequest(r, estado) {
+    if (!requireProfileGuard()) return;
+    const motivo = $("#requestNotes").value.trim();
+    const etiqueta = estado === "observada" ? "observar" : "rechazar";
+    if (!motivo) { toast(`Escribí el motivo para ${etiqueta} antes de continuar`); $("#requestNotes").focus(); return; }
+    if (!confirm(`¿Confirmás que querés ${etiqueta} la solicitud de ${nombre(r)}?`)) return;
+    if (supabaseClient) {
+      try {
+        const { data, error } = await supabaseClient.rpc("fn_resolver_solicitud", { p_id: r.id, p_accion: estado, p_motivo: motivo });
+        if (error) throw error;
+        Object.assign(r, data);
+        write(KEYS.solicitudes, solicitudes);
+        log(`${perfilActual ? perfilActual.nombre : config.administrador} marcó como ${estado} la solicitud de ${nombre(r)}`);
+        closeModal(); renderAll(); toast("Solicitud actualizada");
+      } catch (err) { toast(err.message || "No se pudo actualizar la solicitud"); }
+      return;
+    }
+    r.estado = estado; r.notas_admin = motivo; r.revisado_por = config.administrador; r.fecha_revision = now(); saveSolicitudes(r); log(`${config.administrador} marcó como ${estado} la solicitud de ${nombre(r)}`); closeModal(); renderAll(); toast("Solicitud actualizada");
   }
-  function nextMemberNumber() { const used = solicitudes.map((r) => parseInt(r.numero_socio, 10)).filter(Number.isFinite); return String(Math.max(config.proximoSocio - 1, ...used, 0) + 1).padStart(4, "0"); }
+  function nextMemberNumber() {
+    if (configInstitucional) return String(configInstitucional.proximo_numero_socio).padStart(4, "0");
+    const used = solicitudes.map((r) => parseInt(r.numero_socio, 10)).filter(Number.isFinite); return String(Math.max(config.proximoSocio - 1, ...used, 0) + 1).padStart(4, "0");
+  }
   function approveRequest(r) {
+    if (!requireProfileGuard()) return;
     const suggested = r.numero_socio || nextMemberNumber();
-    modal("Aprobar solicitud", `<p style="color:var(--muted);font-size:12px">Asigná el número de socio y la resolución del Consejo.</p><div class="formgrid"><div class="formfield"><label>Número de socio</label><input id="approveNumber" value="${esc(suggested)}"></div><div class="formfield"><label>Número de resolución</label><input id="approveResolution" value="${esc(r.resolucion_numero || "")}" placeholder="Ej. RES-001/2026"></div></div><div class="formfield" style="margin-top:12px"><label>Notas</label><textarea id="approveNotes" rows="3" style="width:100%;border:1px solid var(--line);border-radius:12px;padding:10px">${esc(r.notas_admin || "")}</textarea></div><div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px"><button class="btn btn-secondary" id="approveCancel">Cancelar</button><button class="btn btn-primary" id="approveConfirm">Confirmar admisión</button></div>`);
+    modal("Aprobar solicitud", `<p style="color:var(--muted);font-size:12px">Asigná el número de socio y la resolución del Consejo. La resolución es obligatoria.${supabaseClient ? " El número lo confirma el servidor: nunca podrá coincidir con uno ya usado, aunque dos personas aprueben al mismo tiempo." : ""}</p><div class="formgrid"><div class="formfield"><label>Número de socio (sugerido)</label><input id="approveNumber" value="${esc(suggested)}"></div><div class="formfield"><label>Número de resolución *</label><input id="approveResolution" value="${esc(r.resolucion_numero || "")}" placeholder="Ej. RES-001/2026"></div></div><div class="formfield" style="margin-top:12px"><label>Notas</label><textarea id="approveNotes" rows="3" style="width:100%;border:1px solid var(--line);border-radius:12px;padding:10px">${esc(r.notas_admin || "")}</textarea></div><div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px"><button class="btn btn-secondary" id="approveCancel">Cancelar</button><button class="btn btn-primary" id="approveConfirm">Confirmar admisión</button></div>`);
     $("#approveCancel").onclick = closeModal;
-    $("#approveConfirm").onclick = () => { const n = $("#approveNumber").value.trim(); if (!n) return toast("Ingresá el número de socio"); if (!/^\d+$/.test(n)) return toast("El número de socio debe contener solo números"); if (solicitudes.some((x) => x !== r && x.numero_socio === n)) return toast("Ese número ya está asignado"); r.estado = "aprobado"; r.numero_socio = n.padStart(4,"0"); r.resolucion_numero = $("#approveResolution").value.trim(); r.notas_admin = $("#approveNotes").value.trim(); r.revisado_por = config.administrador; r.fecha_revision = now(); config.proximoSocio=Math.max(config.proximoSocio,parseInt(n,10)+1); write(KEYS.config,config); saveSolicitudes(r); log(`${config.administrador} aprobó a ${nombre(r)} como socio N.º ${r.numero_socio}`); closeModal(); renderAll(); toast("Socio admitido"); };
+    $("#approveConfirm").onclick = async () => {
+      const resolucion = $("#approveResolution").value.trim();
+      if (!resolucion) return toast("La resolución es obligatoria para aprobar");
+      const n = $("#approveNumber").value.trim();
+      if (n && !/^\d+$/.test(n)) return toast("El número de socio debe contener solo números");
+      const notas = $("#approveNotes").value.trim();
+      if (!confirm(`¿Confirmás la admisión de ${nombre(r)}${n ? ` con el N.º de socio ${n.padStart(4, "0")}` : ""}?`)) return;
+      if (supabaseClient) {
+        try {
+          const { data, error } = await supabaseClient.rpc("fn_aprobar_solicitud", { p_id: r.id, p_resolucion: resolucion, p_numero_socio: n || null, p_notas: notas || null });
+          if (error) throw error;
+          Object.assign(r, data);
+          write(KEYS.solicitudes, solicitudes);
+          await cargarConfigInstitucional();
+          log(`${perfilActual ? perfilActual.nombre : config.administrador} aprobó a ${nombre(r)} como socio N.º ${r.numero_socio}`);
+          closeModal(); renderAll(); toast("Socio admitido");
+        } catch (err) { toast(err.message || "No se pudo aprobar la solicitud"); }
+        return;
+      }
+      if (!n) return toast("Ingresá el número de socio");
+      if (solicitudes.some((x) => x !== r && x.numero_socio === n.padStart(4, "0"))) return toast("Ese número ya está asignado");
+      r.estado = "aprobado"; r.numero_socio = n.padStart(4, "0"); r.resolucion_numero = resolucion; r.notas_admin = notas; r.revisado_por = config.administrador; r.fecha_revision = now(); config.proximoSocio = Math.max(config.proximoSocio, parseInt(n, 10) + 1); write(KEYS.config, config); saveSolicitudes(r); log(`${config.administrador} aprobó a ${nombre(r)} como socio N.º ${r.numero_socio}`); closeModal(); renderAll(); toast("Socio admitido");
+    };
   }
 
   function printRequest(r) {
@@ -218,7 +313,8 @@
   }
 
   function memberPrintHtml(r) {
-    const field = (label, value) => `<div class="f"><small>${esc(label)}</small><strong>${esc(value || "—")}</strong></div>`;
+    const field = (label, value) => value ? `<div class="f"><small>${esc(label)}</small><strong>${esc(value)}</strong></div>` : "";
+    const fieldAlways = (label, value) => `<div class="f"><small>${esc(label)}</small><strong>${esc(value || "—")}</strong></div>`;
     const beneficiaries = Array.isArray(r.beneficiarios) && r.beneficiarios.length
       ? r.beneficiarios.map((b) => `<div class="f"><small>${esc(b.parentesco || "Beneficiario")}</small><strong>${esc(b.nombre)} — C.I. ${esc(b.cedula || "—")} (${esc(String(b.porcentaje || "—"))}%)</strong></div>`).join("")
       : `<p class="muted-note">Sin beneficiarios designados.</p>`;
@@ -229,21 +325,16 @@
     const numeroSocio = r.numero_socio || "—";
     const numeroSolicitud = "0001-" + String(r.numero_solicitud || 0).padStart(4, "0");
     const docCode = "FIC-" + (r.numero_socio || "SOL" + String(r.numero_solicitud || 0).padStart(4, "0"));
-    const emitido = fmtDate(now());
 
     const watermark = admitted ? "" : `<div class="watermark">${r.estado === "rechazado" ? "SOLICITUD RECHAZADA" : "EN REVISIÓN"}</div>`;
 
-    const masthead = (tipo, codigo) => `
+    const masthead = (tipo) => `
       <header class="mh">
         <div class="mh-brand">
           <div class="mh-mark">C</div>
           <div class="mh-name"><strong>Cooperativa Cimientos Ltda.</strong><span>Multiactiva de Ahorro, Crédito, Construcción, Industria y Servicios Varios</span></div>
         </div>
-        <div class="mh-doc">
-          <span class="mh-tag">${esc(tipo)}</span>
-          <span class="mh-code">${esc(codigo)}</span>
-          <span class="mh-date">Emitido ${esc(emitido)}</span>
-        </div>
+        <div class="mh-doc"><span class="mh-tag">${esc(tipo)}</span></div>
       </header>`;
 
     const pageFooter = (codigo) => `
@@ -252,66 +343,89 @@
         <span>${esc(codigo)} · C.I. ${esc(r.cedula || "—")}</span>
       </footer>`;
 
+    const identityLine = [
+      admitted ? `Socio N° ${numeroSocio}` : "Sin número asignado",
+      ...(esFundador
+        ? ["Socio Fundador", `Socio desde la constitución — ${fmtDate(r.fecha_constitucion || FECHA_CONSTITUCION)}`]
+        : [`Solicitud N° ${numeroSolicitud}`, admitted ? `Admitido el ${fmtDate(r.fecha_revision)}` : `Ingresada el ${fmtDate(r.created_at)}`]),
+    ].map(esc).join(" · ");
+
     const ficha = `
       <article class="paper">
         ${watermark}
-        ${masthead("Ficha de Socio", docCode)}
+        ${masthead("Ficha de Socio")}
         <div class="identity">
           <h1>${esc(nombre(r))}</h1>
-          <div class="chipline">
-            <span class="chip">${admitted ? `Socio N.º ${esc(numeroSocio)}` : "Sin número asignado"}</span>
-            ${esFundador
-              ? `<span class="chip ghost">Socio Fundador</span><span class="chip ghost">Socio desde la constitución — ${esc(fmtDate(r.fecha_constitucion || FECHA_CONSTITUCION))}</span>`
-              : `<span class="chip ghost">Solicitud N.º ${esc(numeroSolicitud)}</span><span class="chip ghost">${admitted ? "Admitido el " + esc(fmtDate(r.fecha_revision)) : "Ingresada el " + esc(fmtDate(r.created_at))}</span>`}
-          </div>
+          <p class="identity-line">${identityLine}</p>
         </div>
-        <section><h2><span class="bar"></span>Datos personales</h2><div class="grid">
+        <section><h2>Datos personales</h2><div class="grid">
           ${field("Cédula de identidad", r.cedula)}${field("Nacionalidad", r.nacionalidad)}
           ${field("Fecha de nacimiento", fmtDate(r.fecha_nacimiento))}${field("Estado civil", r.estado_civil)}
           ${field("Profesión / oficio", r.profesion_oficio)}${field("Género", r.genero)}
         </div></section>
-        <section><h2><span class="bar"></span>Domicilio y contacto</h2><div class="grid">
+        <section><h2>Domicilio y contacto</h2><div class="grid">
           ${field("Ciudad", r.ciudad)}${field("Barrio", r.barrio)}
           ${field("Dirección", r.direccion)}${field("Celular / WhatsApp", tel(r))}
           ${field("Correo electrónico", r.correo_electronico)}${field("Tipo de vivienda", r.tipo_vivienda)}
         </div></section>
-        <section><h2><span class="bar"></span>Actividad económica (SEPRELAD)</h2><div class="grid">
+        <section><h2>Actividad económica (SEPRELAD)</h2><div class="grid">
           ${field("Condición laboral", r.condicion_laboral)}${field("Empresa / RUC", r.empresa_ruc)}
           ${field("Cargo / función", r.cargo_laboral)}${field("Antigüedad", r.antiguedad_laboral)}
           ${field("Origen de fondos declarado", r.origen_fondos)}${field("Cargo público / político", r.cargo_publico)}
         </div></section>
         ${esFundador
-          ? `<section><h2><span class="bar"></span>Capital fundacional (Art. 8° inc. f)</h2><div class="grid">
+          ? `<section><h2>Capital fundacional (Art. 8° inc. f)</h2><div class="grid">
           ${field("Certificados suscritos", (r.certificados_suscritos || 100) + " × Gs. 30.000")}${field("Capital suscrito total", fmtGs(r.capital_suscrito || (r.certificados_suscritos || 100) * 30000))}
           ${field("Integrado en la asamblea constitutiva (60%)", fmtGs(r.capital_integrado || Math.round((r.capital_suscrito || 3000000) * 0.6)))}${field("Cuotas del saldo (40%) pagadas", (r.cuotas_saldo_pagadas != null ? r.cuotas_saldo_pagadas : 6) + " de 6")}
         </div></section>`
-          : `<section><h2><span class="bar"></span>Aportes y capital</h2><div class="grid">
+          : `<section><h2>Aportes y capital</h2><div class="grid">
           ${field("Derecho de admisión", fmtGs(r.derecho_admision || 150000))}${field("Cuotas partes adelantadas", r.cuotas_partes)}
-          ${field("Adelanto de aporte inicial", r.monto_adelanto ? fmtGs(r.monto_adelanto) : "—")}${field("Forma de pago declarada", r.forma_pago)}
+          ${field("Adelanto de aporte inicial", r.monto_adelanto ? fmtGs(r.monto_adelanto) : "")}${field("Forma de pago", r.forma_pago)}
         </div></section>`}
-        <section class="tight"><h2><span class="bar"></span>${esFundador ? "Beneficiarios" : "Socio referente y beneficiarios"}</h2><div class="grid">
-          ${esFundador ? "" : field("Socio referente", r.referente_nombre || "Lo asigna el Consejo") + field("Cédula del referente", r.referente_cedula)}
+        ${esFundador ? "" : `<section><h2>Socio referente</h2><div class="grid">
+          ${field("Socio referente", r.referente_nombre || "Lo asigna el Consejo")}${field("Cédula del referente", r.referente_cedula)}
+        </div></section>`}
+        <section class="tight"><h2>Beneficiarios</h2><div class="grid">
           ${beneficiaries}
         </div></section>
+        <section class="tight"><h2>Resolución del Consejo de Administración</h2><div class="grid">
+          ${fieldAlways("N° de socio asignado", numeroSocio)}${fieldAlways("N° de resolución", r.resolucion_numero)}
+          ${fieldAlways("Revisado por", r.revisado_por)}${fieldAlways(esFundador ? "Fecha de constitución" : "Fecha de sesión", fmtDate(esFundador ? (r.fecha_constitucion || FECHA_CONSTITUCION) : r.fecha_revision))}
+        </div></section>
+        <div class="sign-row compact">
+          <div class="sign-box">${r.firma_base64 ? `<img class="sign-img" src="${r.firma_base64}" alt="Firma">` : ""}<div class="sign-line"></div><span>Firma del socio — ${esc(nombre(r))}</span></div>
+          <div class="sign-box"><div class="sign-line"></div><span>Firma y sello — Presidente, Consejo de Administración</span></div>
+        </div>
+        <p class="legal-note">Declaro bajo fe de juramento que los datos consignados son veraces (SEPRELAD) y que acepto el Estatuto Social, sus Reglamentos y resoluciones, conforme al Art. 10° del Estatuto. Admisión resuelta según Art. 12°.</p>
         ${pageFooter(docCode)}
       </article>`;
 
     const constanciaCode = "CON-" + (r.numero_socio || "—");
     const constancia = admitted ? `
       <article class="paper">
-        ${masthead(esFundador ? "Constancia de Socio Fundador" : "Constancia de Admisión", constanciaCode)}
+        ${masthead(esFundador ? "Constancia de Socio Fundador" : "Constancia de Admisión")}
         <div class="cert">
           <span class="cert-eyebrow">Consejo de Administración</span>
           <h1>${esFundador ? "Constancia de Socio Fundador" : "Constancia de Admisión de Socio"}</h1>
           <div class="cert-rule"></div>
           ${esFundador
-            ? `<p>El Consejo de Administración de la Cooperativa Multiactiva de Ahorro, Crédito, Construcción, Industria y Servicios Varios &ldquo;Cimientos&rdquo; Limitada certifica que <strong>${esc(nombre(r))}</strong>, con Cédula de Identidad N.º <strong>${esc(r.cedula || "—")}</strong>, reviste la calidad de <span class="cert-num">Socio Fundador</span> bajo el N.º de Socio ${esc(numeroSocio)}, por haber suscripto e integrado el capital fundacional conforme al Acta de la Asamblea Constitutiva de fecha ${esc(fmtDate(r.fecha_constitucion || FECHA_CONSTITUCION))}, de conformidad con el Art. 8° inc. f del Estatuto Social.</p>`
-            : `<p>El Consejo de Administración de la Cooperativa Multiactiva de Ahorro, Crédito, Construcción, Industria y Servicios Varios &ldquo;Cimientos&rdquo; Limitada certifica que <strong>${esc(nombre(r))}</strong>, con Cédula de Identidad N.º <strong>${esc(r.cedula || "—")}</strong>, ha sido admitido/a como socio/a ordinario/a bajo el <span class="cert-num">N.º de Socio ${esc(numeroSocio)}</span>, por Resolución <strong>${esc(r.resolucion_numero || "—")}</strong>, de fecha ${esc(fmtDate(r.fecha_revision))}, de conformidad con el Estatuto Social.</p>`}
-          <p>Se deja constancia de que el/la socio/a queda sujeto/a al cumplimiento del Estatuto Social, sus Reglamentos internos y las resoluciones de los órganos de la Cooperativa.</p>
+            ? `<p>El Consejo de Administración de la Cooperativa Multiactiva de Ahorro, Crédito, Construcción, Industria y Servicios Varios &ldquo;Cimientos&rdquo; Limitada certifica que <strong>${esc(nombre(r))}</strong>, con Cédula de Identidad N° <strong>${esc(r.cedula || "—")}</strong>, reviste la calidad de <span class="cert-num">Socio Fundador</span> bajo el N° de Socio ${esc(numeroSocio)}, por haber suscripto e integrado el capital fundacional conforme al Acta de la Asamblea Constitutiva de fecha ${esc(fmtDate(r.fecha_constitucion || FECHA_CONSTITUCION))}, de conformidad con el Art. 8° inc. f del Estatuto Social.</p>
+          <p>Se deja constancia de que el/la socio/a fundador/a queda sujeto/a al cumplimiento del Estatuto Social, sus Reglamentos internos y las resoluciones de los órganos de la Cooperativa, gozando desde esta fecha de los derechos establecidos en el Art. 13° del mismo Estatuto.</p>`
+            : `<p>El Consejo de Administración de la Cooperativa Multiactiva de Ahorro, Crédito, Construcción, Industria y Servicios Varios &ldquo;Cimientos&rdquo; Limitada certifica que <strong>${esc(nombre(r))}</strong>, con Cédula de Identidad N° <strong>${esc(r.cedula || "—")}</strong>, ha sido admitido/a como socio/a ordinario/a de la cooperativa bajo el <span class="cert-num">N° de Socio ${esc(numeroSocio)}</span>, en sesión del Consejo de Administración de fecha ${esc(fmtDate(r.fecha_revision))}, de conformidad con el Art. 12° del Estatuto Social.</p>
+          <p>Se deja constancia de que el/la socio/a queda sujeto/a al cumplimiento del Estatuto Social, sus Reglamentos internos y las resoluciones de los órganos de la Cooperativa, gozando desde esta fecha de los derechos establecidos en el Art. 13° del mismo Estatuto.</p>`}
         </div>
         <div class="sign-row">
           <div class="sign-box"><div class="sign-line"></div><span>Presidente — Consejo de Administración</span></div>
           <div class="sign-box"><div class="sign-line"></div><span>Secretario — Consejo de Administración</span></div>
+        </div>
+        <div class="checklist">
+          <strong>Esta carpeta incluye:</strong>
+          <ul>
+            <li>☐ Ficha de socio completa</li>
+            <li>☐ Comprobante de pago del derecho de admisión</li>
+            <li>☐ Constancia de admisión (este documento)</li>
+            <li>☐ Copia del Estatuto Social — imprimir aparte desde estatuto-cimientos.html y adjuntar a la carpeta física</li>
+          </ul>
         </div>
         ${pageFooter(constanciaCode)}
       </article>` : "";
@@ -320,16 +434,16 @@
     const total = (Number(r.derecho_admision) || 150000) + (Number(r.monto_adelanto) || 0);
     const receipt = r.pago_confirmado ? `
       <article class="paper">
-        ${masthead("Comprobante de Pago", reciboCode)}
+        ${masthead("Comprobante de Pago")}
         <div class="identity tight">
           <h1>Recibo de aportes de admisión</h1>
-          <div class="chipline"><span class="chip ghost">Recibo N.º ${esc(r.recibo_numero || "—")}</span><span class="chip ghost">${esc(fmtDate(r.fecha_pago || now()))}</span></div>
+          <p class="identity-line">${[`Recibo N° ${r.recibo_numero || "—"}`, fmtDate(r.fecha_pago || now())].map(esc).join(" · ")}</p>
         </div>
         <div class="receipt-box">
           <div class="grid">
             ${field("Recibí de", nombre(r))}${field("Cédula de identidad", r.cedula)}
-            ${field("Socio N.º", r.numero_socio)}${field("Forma de pago", r.forma_pago)}
-            ${field("Derecho de admisión (Art. 8° inc. c, no reembolsable)", fmtGs(r.derecho_admision || 150000))}${field("Adelanto confirmado", fmtGs(r.monto_adelanto || 0))}
+            ${field("Socio N°", r.numero_socio)}${field("Forma de pago", r.forma_pago)}
+            ${field("Derecho de admisión (Art. 8° inc. c, no reembolsable)", fmtGs(r.derecho_admision || 150000))}${field("Adelanto de aporte declarado", fmtGs(r.monto_adelanto || 0))}
           </div>
           <div class="total-row"><span>Total recibido</span><strong>${fmtGs(total)}</strong></div>
         </div>
@@ -359,24 +473,20 @@
         .mh-name span{display:block;font-size:7.5px;color:#767b73;max-width:60mm;line-height:1.35;margin-top:2px}
         .mh-doc{text-align:right}
         .mh-tag{display:inline-block;background:#eef4e3;color:#4f8217;font-size:9px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;padding:3px 8px;border-radius:999px}
-        .mh-code{display:block;margin-top:4px;font-size:9px;color:#1c1e1c;font-weight:700;letter-spacing:.03em}
-        .mh-date{display:block;margin-top:2px;font-size:8px;color:#8a8f89}
         .identity{position:relative;z-index:1;padding-bottom:3.5mm}
         .identity.tight{padding-bottom:5mm}
         .identity h1{margin:0 0 4px;font-size:19px;letter-spacing:-.02em}
-        .chipline{display:flex;gap:6px;flex-wrap:wrap}
-        .chip{background:#1c1e1c;color:#fff;font-size:9px;font-weight:700;padding:4px 10px;border-radius:999px}
-        .chip.ghost{background:#f1f2ef;color:#5a5f58;font-weight:600}
+        .identity-line{margin:0;font-size:10.5px;color:#5a5f58;font-weight:600}
         section{position:relative;z-index:1;padding:2.6mm 0;border-bottom:1px solid #e4e6e0;break-inside:avoid}
         section.tight{padding-bottom:2mm}
-        section h2{display:flex;align-items:center;gap:6px;font-size:9.5px;text-transform:uppercase;letter-spacing:.08em;color:#4f8217;margin:0 0 2.4mm;font-weight:800}
-        section h2 .bar{width:4px;height:10px;border-radius:2px;background:#6a9c20;display:inline-block}
+        section h2{font-size:9.5px;text-transform:uppercase;letter-spacing:.08em;color:#4f8217;margin:0 0 2.4mm;font-weight:800}
         .grid{display:grid;grid-template-columns:1fr 1fr;column-gap:9mm;row-gap:2.2mm}
         .f{break-inside:avoid}
         .f small{display:block;color:#8a8f89;font-size:7.3px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:1px}
         .f strong{display:block;font-size:10px;font-weight:650;padding-bottom:1.4mm;border-bottom:1px solid #e9ebe6}
         .muted-note{grid-column:1/-1;color:#8a8f89;font-size:9.5px;margin:0}
         .sign-row{position:relative;z-index:1;display:grid;grid-template-columns:1fr 1fr;gap:16mm;margin-top:20mm}
+        .sign-row.compact{margin-top:8mm}
         .sign-box{text-align:center}
         .sign-img{max-height:16mm;max-width:100%;display:block;margin:0 auto 2mm}
         .sign-line{border-top:1px solid #1c1e1c;padding-top:0}
@@ -392,6 +502,9 @@
         .cert-rule{width:44px;height:2px;background:#6a9c20;margin:0 auto 12mm}
         .cert p{font-family:"Source Serif 4",Georgia,serif;font-size:13.5px;line-height:1.9;text-align:left;margin:0 0 6mm;color:#26281f}
         .cert-num{font-weight:700;color:#4f8217}
+        .checklist{position:relative;z-index:1;max-width:150mm;margin:16mm auto 0;border-top:1px solid #e4e6e0;padding-top:6mm;font-size:9.5px;color:#5a5f58}
+        .checklist strong{display:block;margin-bottom:2mm;color:#26281f;font-size:10px}
+        .checklist ul{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:1.6mm}
         .pf{position:absolute;left:16mm;right:16mm;bottom:9mm;display:flex;justify-content:space-between;border-top:1px solid #e4e6e0;padding-top:2.5mm;font-size:7.5px;color:#9a9e96;z-index:1}
         .actions{position:fixed;right:18px;bottom:18px;display:flex;gap:8px;z-index:9}
         .actions button{border:0;border-radius:12px;padding:11px 16px;font-weight:750;font-family:inherit;font-size:13px;cursor:pointer}
@@ -414,10 +527,49 @@
   function openLead(id) { const r = leads.find((x) => String(x.id) === String(id)); if (!r) return; leadModal(r); }
   function leadModal(r) {
     const isNew = !r;
-    modal(isNew ? "Nuevo pre-registro" : "Gestionar pre-registro", `<div class="formgrid"><div class="formfield"><label>Nombre y apellido</label><input id="leadName" value="${esc(r?.nombre_contacto || "")}"></div><div class="formfield"><label>Celular / WhatsApp</label><input id="leadPhone" value="${esc(r?.celular_whatsapp || "")}"></div><div class="formfield"><label>Origen</label><select id="leadOrigin"><option>Presencial</option><option>WhatsApp</option><option>Llamada</option><option>Referido</option><option>Otro</option></select></div><div class="formfield"><label>Estado</label><select id="leadStatus"><option value="pendiente">Pendiente</option><option value="enviado">Link enviado</option><option value="completado">Completado</option><option value="descartado">Descartado</option></select></div></div><div class="formfield" style="margin-top:12px"><label>Notas</label><textarea id="leadNotes" rows="3" style="width:100%;border:1px solid var(--line);border-radius:12px;padding:10px">${esc(r?.notas || "")}</textarea></div><div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:16px">${isNew ? "" : '<button class="btn" style="background:var(--danger);color:white" id="leadDelete">Eliminar</button><button class="btn btn-secondary" id="leadWhatsApp">Preparar WhatsApp</button>'}<button class="btn btn-primary" id="leadSave">Guardar</button></div>`);
-    $("#leadOrigin").value = r?.origen || "Presencial"; $("#leadStatus").value = r?.estado || "pendiente";
+    modal(isNew ? "Nuevo pre-registro" : "Gestionar pre-registro", `<div class="formgrid"><div class="formfield"><label>Nombre y apellido</label><input id="leadName" value="${esc(r?.nombre_contacto || "")}"></div><div class="formfield"><label>Celular / WhatsApp</label><input id="leadPhone" value="${esc(r?.celular_whatsapp || "")}"></div><div class="formfield"><label>Origen</label><select id="leadOrigin"><option>Presencial</option><option>WhatsApp</option><option>Llamada</option><option>Referido</option><option>Otro</option></select></div><div class="formfield"><label>Estado</label><select id="leadStatus"><option value="pendiente">Pendiente</option><option value="preparado">Link preparado</option><option value="iniciado">Formulario iniciado</option><option value="completado">Completado</option><option value="descartado">Descartado</option></select></div></div><div class="formfield" style="margin-top:12px"><label>Notas</label><textarea id="leadNotes" rows="3" style="width:100%;border:1px solid var(--line);border-radius:12px;padding:10px">${esc(r?.notas || "")}</textarea></div><div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:16px">${isNew ? "" : '<button class="btn" style="background:var(--danger);color:white" id="leadDelete">Eliminar</button><button class="btn btn-secondary" id="leadCopyLink">Copiar link</button><button class="btn btn-secondary" id="leadWhatsApp">Preparar WhatsApp</button>'}<button class="btn btn-primary" id="leadSave">Guardar</button></div>`);
+    $("#leadOrigin").value = r?.origen || "Presencial"; $("#leadStatus").value = r?.estado === "enviado" ? "preparado" : (r?.estado || "pendiente");
     $("#leadSave").onclick = () => { const name = $("#leadName").value.trim(), phone = $("#leadPhone").value.trim(); if (!name || !phone) return toast("Completá nombre y celular"); if (isNew) { r = { id: "lead-" + Date.now(), created_at: now() }; leads.unshift(r); } Object.assign(r, { nombre_contacto: name, celular_whatsapp: phone, origen: $("#leadOrigin").value, estado: $("#leadStatus").value, notas: $("#leadNotes").value.trim(), creado_por: config.administrador }); saveLeads(r); log(`${config.administrador} ${isNew ? "creó" : "actualizó"} el pre-registro de ${name}`); closeModal(); renderAll(); toast("Pre-registro guardado"); };
-    if (!isNew) { $("#leadDelete").onclick = () => { if (!confirm("¿Eliminar este pre-registro?")) return; deleteRemote(TABLES.leads, r.id); leads = leads.filter((x) => x !== r); saveLeads(); log(`${config.administrador} eliminó el pre-registro de ${r.nombre_contacto}`); closeModal(); renderAll(); }; $("#leadWhatsApp").classList.add("btn-whatsapp"); $("#leadWhatsApp").onclick = () => { const phone = String(r.celular_whatsapp).replace(/\D/g, "").replace(/^0/, "595"); const base = location.href.replace(/panel\.html.*$/i, "formulario.html"); const link = base + "?" + new URLSearchParams({ nombre: r.nombre_contacto, celular: r.celular_whatsapp, preregistro: r.id }); const msg = (config.mensajeInvitacion || "Hola {nombre}, te compartimos el formulario de admisión: {link}").replaceAll("{nombre}", r.nombre_contacto).replaceAll("{link}", link); r.estado = "enviado"; r.fecha_envio = now(); saveLeads(r); log(`Se preparó el enlace de admisión para ${r.nombre_contacto}`); window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, "_blank"); closeModal(); renderAll(); }; }
+    if (!isNew) {
+      $("#leadDelete").onclick = () => { if (!confirm("¿Eliminar este pre-registro?")) return; deleteRemote(TABLES.leads, r.id); leads = leads.filter((x) => x !== r); saveLeads(); log(`${config.administrador} eliminó el pre-registro de ${r.nombre_contacto}`); closeModal(); renderAll(); };
+      // El link nunca lleva nombre ni celular en la URL: se genera un
+      // token opaco y temporal en el servidor (fn_generar_token_preregistro)
+      // que el formulario público resuelve del lado del servidor. Solo se
+      // marca "preparado" — abrir WhatsApp o copiar el link no confirma
+      // que la persona lo haya recibido ni completado.
+      async function prepararLink() {
+        const base = siteOrigin();
+        if (!base) {
+          toast("No se pudo armar el link: abrí el panel desde su dirección web real (https://…), no como archivo local.");
+          return null;
+        }
+        if (supabaseClient) {
+          try {
+            const { data: token, error } = await supabaseClient.rpc("fn_generar_token_preregistro", { p_id: r.id });
+            if (error) throw error;
+            r.token = token; r.estado = "preparado";
+            write(KEYS.leads, leads);
+            log(`Se preparó el enlace de admisión para ${r.nombre_contacto}`);
+            renderAll();
+            return new URL("formulario", base + "/").toString() + "?pre=" + encodeURIComponent(token);
+          } catch (err) { toast(err.message || "No se pudo generar el enlace"); return null; }
+        }
+        // Sin Supabase configurado: no hay dónde resolver un token server-side,
+        // así que el link cae de vuelta al formulario sin datos personales
+        // en la URL (la persona completa su nombre/celular a mano).
+        r.estado = "preparado"; saveLeads(r); renderAll();
+        return new URL("formulario", base + "/").toString();
+      }
+      $("#leadCopyLink").onclick = async () => { const link = await prepararLink(); if (!link) return; navigator.clipboard?.writeText(link).then(() => toast("Link copiado")).catch(() => toast(link)); };
+      $("#leadWhatsApp").classList.add("btn-whatsapp");
+      $("#leadWhatsApp").onclick = async () => {
+        const link = await prepararLink(); if (!link) return;
+        const phone = String(r.celular_whatsapp).replace(/\D/g, "").replace(/^0/, "595");
+        const msg = (config.mensajeInvitacion || "Hola {nombre}, te compartimos el formulario de admisión: {link}").replaceAll("{nombre}", r.nombre_contacto).replaceAll("{link}", link);
+        window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, "_blank");
+        closeModal(); renderAll();
+      };
+    }
   }
 
   function fundadorModal(prefill) {
@@ -520,32 +672,99 @@
       const t = Object.assign({}, DEFAULTS, read(KEYS.theme, {})); p.innerHTML = head("Identidad visual", "Colores e identidad de la cooperativa.") + `<div class="colorrow"><div class="colorbox"><label>Principal</label><input type="color" id="greenColor" value="${t.green}"></div><div class="colorbox"><label>Acento</label><input type="color" id="orangeColor" value="${t.orange}"></div><div class="colorbox"><label>Fondo</label><input type="color" id="bgColor" value="${t.bg}"></div></div><button class="btn btn-primary" id="saveTheme" style="margin-top:16px">Guardar apariencia</button>`; ["green","orange","bg"].forEach(k => $("#"+k+"Color").oninput=e=>document.documentElement.style.setProperty("--"+k,e.target.value)); $("#saveTheme").onclick=()=>{const v={green:$("#greenColor").value,orange:$("#orangeColor").value,bg:$("#bgColor").value};write(KEYS.theme,v);applyTheme(v);toast("Apariencia guardada")}; return;
     }
     if (name === "funcionarios") {
-      const list=config.funcionarios||[]; p.innerHTML=head("Funcionarios","Perfiles locales para probar la administración.")+`<div class="formgrid"><div class="formfield"><label>Nombre</label><input id="staffName"></div><div class="formfield"><label>Correo</label><input id="staffEmail" type="email"></div><div class="formfield"><label>Cargo</label><input id="staffRole"></div></div><button class="btn btn-primary" id="staffAdd" style="margin-top:14px">Agregar</button><div class="list" id="staffList" style="margin-top:18px">${list.map((s,i)=>`<div class="item"><div class="item-main"><strong>${esc(s.nombre)}</strong><small>${esc(s.cargo)} · ${esc(s.correo)}</small></div><button class="linkbtn" data-del-staff="${i}">Eliminar</button></div>`).join("")||'<div class="empty">Sin funcionarios.</div>'}</div>`; $("#staffAdd").onclick=()=>{const n=$("#staffName").value.trim(),e=$("#staffEmail").value.trim();if(!n||!e)return toast("Completá nombre y correo");list.push({nombre:n,correo:e,cargo:$("#staffRole").value.trim()||"Funcionario"});config.funcionarios=list;write(KEYS.config,config);renderSetting(name)};$$('[data-del-staff]').forEach(b=>b.onclick=()=>{list.splice(+b.dataset.delStaff,1);config.funcionarios=list;write(KEYS.config,config);renderSetting(name)});return;
+      if (!supabaseClient) { p.innerHTML = head("Funcionarios", "Se activa cuando el panel está conectado a Supabase.") + '<div class="empty">Conectá Supabase para ver el equipo real (ver config.js).</div>'; return; }
+      p.innerHTML = head("Funcionarios", "Cada fila es una persona real que inició sesión al menos una vez — no hay altas manuales acá: para sumar a alguien nuevo, creá su usuario en Supabase → Authentication → Users.") + `<div class="list" id="staffList"><div class="empty">Cargando…</div></div>`;
+      supabaseClient.from("perfiles_admin").select("*").order("created_at", { ascending: true }).then(({ data, error }) => {
+        if (error) { $("#staffList").innerHTML = `<div class="empty">${esc(error.message)}</div>`; return; }
+        $("#staffList").innerHTML = (data || []).map((s) => `<div class="item"><div class="item-main"><strong>${esc(s.nombre)}</strong><small>${esc(s.cargo)} · ${esc(s.correo || "—")}</small></div>${esSuperadmin() ? `<select data-role-for="${esc(s.id)}" ${s.id === perfilActual.id ? "disabled title=\"No podés cambiar tu propio rol\"" : ""}><option value="lectura"${s.rol === "lectura" ? " selected" : ""}>Solo lectura</option><option value="admision"${s.rol === "admision" ? " selected" : ""}>Admisión</option><option value="superadministrador"${s.rol === "superadministrador" ? " selected" : ""}>Superadministrador</option></select>` : `<span class="badge activo">${esc(ROL_LABEL[s.rol] || s.rol)}</span>`}</div>`).join("") || '<div class="empty">Todavía nadie inició sesión.</div>';
+        $$('[data-role-for]').forEach((sel) => sel.onchange = async () => {
+          try { const { error: e2 } = await supabaseClient.rpc("fn_actualizar_rol_perfil", { p_id: sel.dataset.roleFor, p_rol: sel.value }); if (e2) throw e2; log(`${perfilActual.nombre} cambió el rol de un funcionario`); toast("Rol actualizado"); }
+          catch (err) { toast(err.message || "No se pudo cambiar el rol"); renderSetting(name); }
+        });
+      });
+      return;
     }
-    if (name === "roles") { const roles=config.roles||[];p.innerHTML=head("Roles y permisos","Creá niveles de acceso para los futuros usuarios.")+`<div class="formgrid"><div class="formfield"><label>Rol</label><input id="roleName"></div><div class="formfield"><label>Nivel</label><select id="roleLevel"><option>Solo lectura</option><option>Admisiones</option><option>Acceso total</option></select></div></div><button class="btn btn-primary" id="roleAdd" style="margin-top:14px">Crear rol</button><div class="list" style="margin-top:18px">${roles.map(r=>`<div class="item"><div class="item-main"><strong>${esc(r.nombre)}</strong><small>${esc(r.nivel)}</small></div></div>`).join("")||'<div class="empty">Sin roles personalizados.</div>'}</div>`;$("#roleAdd").onclick=()=>{const n=$("#roleName").value.trim();if(!n)return toast("Ingresá un nombre");roles.push({nombre:n,nivel:$("#roleLevel").value});config.roles=roles;write(KEYS.config,config);renderSetting(name)};return; }
-    if (name === "admision") { p.innerHTML=head("Admisión","Numeración y parámetros del proceso.")+`<div class="formgrid"><div class="formfield"><label>Próximo N.º de socio</label><input id="nextMember" type="number" value="${config.proximoSocio}"></div><div class="formfield"><label>Administrador</label><input id="adminName" value="${esc(config.administrador)}"></div><div class="formfield"><label>Derecho de admisión</label><input id="fee" type="number" value="${config.derechoAdmision||150000}"></div></div><button class="btn btn-primary" id="saveAdmission" style="margin-top:14px">Guardar</button>`;$("#saveAdmission").onclick=()=>{config.proximoSocio=+$("#nextMember").value||38;config.administrador=$("#adminName").value.trim()||DEFAULTS.administrador;config.derechoAdmision=+$("#fee").value||150000;write(KEYS.config,config);toast("Admisión guardada")};return; }
+    if (name === "roles") {
+      p.innerHTML = head("Roles y permisos", "Cada persona tiene uno de estos tres roles, asignado desde Funcionarios por un superadministrador.") + `<div class="list"><div class="item"><div class="item-main"><strong>Superadministrador</strong><small>Todo lo anterior, además de cerrar la nómina fundacional y cambiar roles de otras personas.</small></div></div><div class="item"><div class="item-main"><strong>Admisión</strong><small>Puede aprobar, observar y rechazar solicitudes, gestionar pre-registros e importar fundadores (mientras la nómina esté abierta).</small></div></div><div class="item"><div class="item-main"><strong>Solo lectura</strong><small>Puede ver todo el panel, pero no aprobar, observar, rechazar ni importar nada.</small></div></div></div>`;
+      return;
+    }
+    if (name === "admision") {
+      const proximo = configInstitucional ? configInstitucional.proximo_numero_socio : config.proximoSocio;
+      const fee = configInstitucional ? configInstitucional.derecho_admision : (config.derechoAdmision || 150000);
+      const cerrada = configInstitucional && configInstitucional.cierre_fundacional;
+      p.innerHTML = head("Admisión", "Numeración y parámetros del proceso.") +
+        `<div class="formgrid"><div class="formfield"><label>Próximo N.º de socio</label><input value="${esc(String(proximo).padStart(4,"0"))}" disabled title="Lo asigna el servidor automáticamente al aprobar; ya no se puede editar a mano."></div><div class="formfield"><label>Derecho de admisión</label><input id="fee" type="number" value="${fee}" ${supabaseClient ? "" : "disabled"}></div></div>` +
+        (supabaseClient ? `<button class="btn btn-primary" id="saveAdmission" style="margin-top:14px">Guardar</button>` : "") +
+        `<div style="margin-top:26px;padding-top:20px;border-top:1px solid var(--line)"><h3 style="font-size:13px;margin:0 0 6px">Nómina fundacional</h3><p style="color:var(--muted);font-size:12px;margin:0 0 12px">${cerrada ? `Cerrada${configInstitucional.cierre_fundacional_por ? " por " + esc(configInstitucional.cierre_fundacional_por) : ""}${configInstitucional.cierre_fundacional_fecha ? " el " + esc(fmtDate(configInstitucional.cierre_fundacional_fecha)) : ""}. Ya no se pueden importar ni agregar fundadores nuevos.` : "Mientras esté abierta, se pueden seguir importando fundadores. Cerrala una vez que la nómina esté completa y confirmada."}</p>${cerrada || !supabaseClient ? "" : `<button class="btn" style="background:var(--danger);color:white" id="cerrarNomina" ${esSuperadmin() ? "" : "disabled title=\"Solo un superadministrador puede cerrar la nómina\""}>Cerrar nómina fundacional</button>`}</div>`;
+      if ($("#saveAdmission")) $("#saveAdmission").onclick = async () => {
+        try {
+          const { data, error } = await supabaseClient.rpc("fn_actualizar_configuracion_institucional", { p_derecho_admision: +$("#fee").value || 150000 });
+          if (error) throw error;
+          configInstitucional = data; toast("Admisión guardada");
+        } catch (err) { toast(err.message || "No se pudo guardar"); }
+      };
+      if ($("#cerrarNomina")) $("#cerrarNomina").onclick = async () => {
+        if (!confirm("¿Cerrar la nómina fundacional? Después de esto no se van a poder importar ni agregar fundadores nuevos, solo corregir datos de los existentes.")) return;
+        try {
+          const { data, error } = await supabaseClient.rpc("fn_cerrar_nomina_fundacional");
+          if (error) throw error;
+          configInstitucional = data; log(`${perfilActual ? perfilActual.nombre : config.administrador} cerró la nómina fundacional`); renderSetting(name); toast("Nómina fundacional cerrada");
+        } catch (err) { toast(err.message || "No se pudo cerrar la nómina"); }
+      };
+      return;
+    }
     if (name === "mensajes") { p.innerHTML=head("Mensajes","Plantilla para enviar el formulario por WhatsApp.")+`<div class="formfield"><label>Invitación</label><textarea id="msgInvite" rows="6" style="width:100%;border:1px solid var(--line);border-radius:12px;padding:10px">${esc(config.mensajeInvitacion||"Hola {nombre}, te compartimos el formulario de admisión: {link}")}</textarea></div><button class="btn btn-primary" id="saveMsg" style="margin-top:14px">Guardar</button>`;$("#saveMsg").onclick=()=>{config.mensajeInvitacion=$("#msgInvite").value;write(KEYS.config,config);toast("Mensaje guardado")};return; }
-    if (name === "seguridad") { p.innerHTML=head("Seguridad","Protección local mientras no exista autenticación.")+`<div class="formgrid"><div class="formfield"><label>PIN de 4 a 6 números</label><input id="pin" type="password" maxlength="6" value="${esc(config.pin||"")}"></div><div class="formfield"><label>Confirmar eliminaciones</label><select id="confirmDelete"><option value="1">Sí</option><option value="0">No</option></select></div></div><button class="btn btn-primary" id="saveSecurity" style="margin-top:14px">Guardar</button>`;$("#saveSecurity").onclick=()=>{const v=$("#pin").value;if(v&&!/^\d{4,6}$/.test(v))return toast("PIN inválido");config.pin=v;config.confirmarBorrado=$("#confirmDelete").value==="1";write(KEYS.config,config);toast("Seguridad guardada")};return; }
+    if (name === "seguridad") {
+      if (supabaseClient) {
+        p.innerHTML = head("Seguridad", "El acceso al panel lo protege el login de Supabase — ya no hace falta un PIN local.") + `<div class="item"><div class="item-main"><strong>Tu contraseña</strong><small>Cambiala desde tu perfil (ícono de la esquina superior derecha del panel).</small></div></div><div class="item"><div class="item-main"><strong>Quién puede aprobar/rechazar</strong><small>Lo define el rol de cada persona — ver Configuraciones → Roles y permisos.</small></div></div>`;
+        return;
+      }
+      p.innerHTML=head("Seguridad","Protección local mientras no exista autenticación.")+`<div class="formgrid"><div class="formfield"><label>PIN de 4 a 6 números</label><input id="pin" type="password" maxlength="6" value="${esc(config.pin||"")}"></div><div class="formfield"><label>Confirmar eliminaciones</label><select id="confirmDelete"><option value="1">Sí</option><option value="0">No</option></select></div></div><button class="btn btn-primary" id="saveSecurity" style="margin-top:14px">Guardar</button>`;$("#saveSecurity").onclick=()=>{const v=$("#pin").value;if(v&&!/^\d{4,6}$/.test(v))return toast("PIN inválido");config.pin=v;config.confirmarBorrado=$("#confirmDelete").value==="1";write(KEYS.config,config);toast("Seguridad guardada")};return; }
     if (name === "respaldo") { p.innerHTML=head("Respaldo","Descargá, restaurá o limpiá la base local.")+`<p><strong>${solicitudes.length}</strong> solicitudes · <strong>${leads.length}</strong> pre-registros</p><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-primary" id="backupBtn">Descargar</button><label class="btn btn-secondary">Importar<input id="restoreInput" type="file" accept="application/json" hidden></label><button class="btn" style="background:var(--danger);color:white" id="clearData">Borrar datos</button></div>`;$("#backupBtn").onclick=()=>{const a=document.createElement("a"),blob=new Blob([JSON.stringify({app:"Cimientos Beta Local",solicitudes,leads,actividad,config},null,2)],{type:"application/json"});a.href=URL.createObjectURL(blob);a.download="respaldo-cimientos.json";a.click()};$("#restoreInput").onchange=e=>{const f=e.target.files[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{try{const d=JSON.parse(rd.result);if(d.app!=="Cimientos Beta Local")throw Error("Archivo no válido");solicitudes=d.solicitudes||[];leads=d.leads||[];actividad=d.actividad||[];config=Object.assign({},DEFAULTS,d.config||{});saveSolicitudes();saveLeads();write(KEYS.actividad,actividad);write(KEYS.config,config);renderAll();renderSetting(name)}catch(x){toast(x.message)}};rd.readAsText(f)};$("#clearData").onclick=()=>{if(!confirm("¿Borrar todos los datos locales?"))return;solicitudes=[];leads=[];actividad=[];saveSolicitudes();saveLeads();write(KEYS.actividad,[]);renderAll();renderSetting(name)}; }
   }
 
   function initials(name) { return String(name || "A").trim().split(/\s+/).slice(0, 2).map(x => x[0]).join("").toUpperCase(); }
-  function updateProfileUI() { const p=$("#profileBtn"), av=p.querySelector(".avatar"), strong=p.querySelector("strong"), small=p.querySelector("small"); strong.textContent=config.administrador; small.textContent=config.cargoAdministrador||"Administrador"; av.innerHTML=config.fotoAdministrador?`<img class="profile-photo" src="${config.fotoAdministrador}" alt="">`:esc(initials(config.administrador)); }
+  const ROL_LABEL = { superadministrador: "Superadministrador", admision: "Admisión", lectura: "Solo lectura" };
+  function updateProfileUI() {
+    const p = $("#profileBtn"), av = p.querySelector(".avatar"), strong = p.querySelector("strong"), small = p.querySelector("small");
+    const nombre = perfilActual ? perfilActual.nombre : config.administrador;
+    const cargo = perfilActual ? (ROL_LABEL[perfilActual.rol] || perfilActual.cargo) : (config.cargoAdministrador || "Administrador");
+    const foto = perfilActual ? perfilActual.foto_base64 : config.fotoAdministrador;
+    strong.textContent = nombre; small.textContent = cargo;
+    av.innerHTML = foto ? `<img class="profile-photo" src="${foto}" alt="">` : esc(initials(nombre));
+  }
   async function signOutPanel() {
     [KEYS.solicitudes, KEYS.leads, KEYS.actividad].forEach((key) => localStorage.removeItem(key));
     if (supabaseClient) await supabaseClient.auth.signOut();
     location.reload();
   }
   async function openProfile() {
-    let authEmail=config.correoAdministrador||"";
-    if(supabaseClient){const {data}=await supabaseClient.auth.getUser();authEmail=data?.user?.email||authEmail;}
-    const avatar=config.fotoAdministrador?`<img src="${config.fotoAdministrador}" alt="Foto de perfil">`:esc(initials(config.administrador));
-    modal("Mi perfil", `<div class="profile-sheet"><div><div class="profile-avatar-large" id="profilePreview">${avatar}</div><label class="btn btn-secondary" style="display:block;text-align:center;margin-top:10px">Cambiar foto<input type="file" id="profilePhoto" accept="image/*" hidden></label></div><div><div class="formfield"><label>Nombre visible</label><input id="profileName" value="${esc(config.administrador)}"></div><div class="formfield" style="margin-top:12px"><label>Correo de acceso</label><input id="profileEmail" type="email" value="${esc(authEmail)}" readonly></div><div class="formfield" style="margin-top:12px"><label>Rol</label><input id="profileRole" value="${esc(config.cargoAdministrador||"Superadministrador")}" readonly></div><div style="display:flex;gap:8px;justify-content:flex-end;margin-top:18px"><button class="btn btn-secondary" id="profileActivity">Ver actividad</button><button class="btn btn-primary" id="profileSave">Guardar perfil</button></div></div></div><div class="profile-security"><h3>Seguridad</h3><button class="profile-action" id="profilePassword">Cambiar contraseña</button><button class="profile-action" id="profileSettings">Editar en Configuración</button><button class="profile-action danger" id="profileLogout">Cerrar sesión</button></div>`);
-    let pendingPhoto=config.fotoAdministrador||""; $("#profilePhoto").onchange=e=>{const f=e.target.files[0];if(!f)return;if(f.size>1500000)return toast("La imagen debe pesar menos de 1,5 MB");const rd=new FileReader();rd.onload=()=>{pendingPhoto=rd.result;$("#profilePreview").innerHTML=`<img src="${pendingPhoto}" alt="Vista previa">`};rd.readAsDataURL(f)};
-    $("#profileActivity").onclick=()=>{closeModal();go("actividad")}; $("#profileSave").onclick=()=>{const n=$("#profileName").value.trim();if(!n)return toast("Ingresá tu nombre");config.administrador=n;config.correoAdministrador=authEmail;config.fotoAdministrador=pendingPhoto;write(KEYS.config,config);updateProfileUI();log("Se actualizó el perfil administrador");closeModal();toast("Perfil guardado")};
-    $("#profileSettings").onclick=()=>{closeModal();go("config")};
-    $("#profileLogout").onclick=signOutPanel;
-    $("#profilePassword").onclick=()=>{modal("Cambiar contraseña",`<p style="color:var(--muted);font-size:12px">Usá una contraseña de al menos 8 caracteres.</p><div class="formfield"><label>Nueva contraseña</label><input id="newPassword" type="password" minlength="8" autocomplete="new-password"></div><div style="display:flex;justify-content:flex-end;margin-top:16px"><button class="btn btn-primary" id="savePassword">Actualizar contraseña</button></div>`);$("#savePassword").onclick=async()=>{const password=$("#newPassword").value;if(password.length<8)return toast("La contraseña debe tener al menos 8 caracteres");const {error}=await supabaseClient.auth.updateUser({password});if(error)return toast("No se pudo cambiar la contraseña");closeModal();toast("Contraseña actualizada")}};
+    const cloud = !!supabaseClient && !!perfilActual;
+    const authEmail = cloud ? (perfilActual.correo || "") : (config.correoAdministrador || "");
+    const nombreActual = cloud ? perfilActual.nombre : config.administrador;
+    const fotoActual = cloud ? perfilActual.foto_base64 : config.fotoAdministrador;
+    const rolActualLabel = cloud ? (ROL_LABEL[perfilActual.rol] || perfilActual.rol) : (config.cargoAdministrador || "Superadministrador");
+    const avatar = fotoActual ? `<img src="${fotoActual}" alt="Foto de perfil">` : esc(initials(nombreActual));
+    modal("Mi perfil", `<div class="profile-sheet"><div><div class="profile-avatar-large" id="profilePreview">${avatar}</div><label class="btn btn-secondary" style="display:block;text-align:center;margin-top:10px">Cambiar foto<input type="file" id="profilePhoto" accept="image/*" hidden></label></div><div><div class="formfield"><label>Nombre visible</label><input id="profileName" value="${esc(nombreActual)}"></div><div class="formfield" style="margin-top:12px"><label>Correo de acceso</label><input id="profileEmail" type="email" value="${esc(authEmail)}" readonly></div><div class="formfield" style="margin-top:12px"><label>Rol</label><input id="profileRole" value="${esc(rolActualLabel)}" readonly title="Lo asigna un superadministrador desde Configuraciones → Funcionarios"></div><div style="display:flex;gap:8px;justify-content:flex-end;margin-top:18px"><button class="btn btn-secondary" id="profileActivity">Ver actividad</button><button class="btn btn-primary" id="profileSave">Guardar perfil</button></div></div></div><div class="profile-security"><h3>Seguridad</h3>${cloud ? '<button class="profile-action" id="profilePassword">Cambiar contraseña</button>' : ""}<button class="profile-action" id="profileSettings">Editar en Configuración</button>${cloud ? '<button class="profile-action danger" id="profileLogout">Cerrar sesión</button>' : ""}</div>`);
+    let pendingPhoto = fotoActual || ""; $("#profilePhoto").onchange = e => { const f = e.target.files[0]; if (!f) return; if (f.size > 1500000) return toast("La imagen debe pesar menos de 1,5 MB"); const rd = new FileReader(); rd.onload = () => { pendingPhoto = rd.result; $("#profilePreview").innerHTML = `<img src="${pendingPhoto}" alt="Vista previa">` }; rd.readAsDataURL(f); };
+    $("#profileActivity").onclick = () => { closeModal(); go("actividad") };
+    $("#profileSave").onclick = async () => {
+      const n = $("#profileName").value.trim(); if (!n) return toast("Ingresá tu nombre");
+      if (cloud) {
+        try {
+          const { data, error } = await supabaseClient.from("perfiles_admin").update({ nombre: n, foto_base64: pendingPhoto, updated_at: now() }).eq("id", perfilActual.id).select().single();
+          if (error) throw error;
+          perfilActual = data; updateProfileUI(); log("Se actualizó el perfil administrador"); closeModal(); toast("Perfil guardado");
+        } catch (err) { toast(err.message || "No se pudo guardar el perfil"); }
+        return;
+      }
+      config.administrador = n; config.fotoAdministrador = pendingPhoto; write(KEYS.config, config); updateProfileUI(); log("Se actualizó el perfil administrador"); closeModal(); toast("Perfil guardado");
+    };
+    $("#profileSettings").onclick = () => { closeModal(); go("config") };
+    if (cloud) {
+      $("#profileLogout").onclick = signOutPanel;
+      $("#profilePassword").onclick = () => { modal("Cambiar contraseña", `<p style="color:var(--muted);font-size:12px">Usá una contraseña de al menos 8 caracteres.</p><div class="formfield"><label>Nueva contraseña</label><input id="newPassword" type="password" minlength="8" autocomplete="new-password"></div><div style="display:flex;justify-content:flex-end;margin-top:16px"><button class="btn btn-primary" id="savePassword">Actualizar contraseña</button></div>`); $("#savePassword").onclick = async () => { const password = $("#newPassword").value; if (password.length < 8) return toast("La contraseña debe tener al menos 8 caracteres"); const { error } = await supabaseClient.auth.updateUser({ password }); if (error) return toast("No se pudo cambiar la contraseña"); closeModal(); toast("Contraseña actualizada") }; };
+    }
   }
   function decorateIcons(){const icons={inicio:'<path d="M3 11 12 3l9 8"/><path d="M5 10v10h14V10M9 20v-6h6v6"/>',solicitudes:'<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h4"/>',preregistros:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M16 11h6"/>',socios:'<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>',actividad:'<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/>',config:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.83 2.83-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6 1.7 1.7 0 0 0-.4 1.1V21h-4v-.09A1.7 1.7 0 0 0 8.6 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-.6-1 1.7 1.7 0 0 0-1.1-.4H3v-4h.09A1.7 1.7 0 0 0 4.6 8.6a1.7 1.7 0 0 0-.34-1.88l-.06-.06 2.83-2.83.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-.6 1.7 1.7 0 0 0 .4-1.1V3h4v.09A1.7 1.7 0 0 0 15.4 4.6a1.7 1.7 0 0 0 1.88-.34l.06-.06 2.83 2.83-.06.06A1.7 1.7 0 0 0 19.4 9c.14.38.36.72.65 1 .3.28.68.43 1.1.4H21v4h-.09A1.7 1.7 0 0 0 19.4 15Z"/>'};$$('[data-go] .ico').forEach(e=>{const k=e.closest('[data-go]').dataset.go;if(icons[k])e.innerHTML=`<svg viewBox="0 0 24 24" aria-hidden="true">${icons[k]}</svg>`});$$('.quick [data-go]').forEach(e=>{const k=e.dataset.go,b=e.querySelector('b');if(b&&icons[k])b.innerHTML=`<svg viewBox="0 0 24 24" aria-hidden="true">${icons[k]}</svg>`});$$('.mobilebar [data-go]').forEach(e=>{const k=e.dataset.go,b=e.querySelector('b');if(b&&icons[k])b.innerHTML=`<svg viewBox="0 0 24 24" aria-hidden="true">${icons[k]}</svg>`})}
   $$('[data-go]').forEach((b) => b.addEventListener("click", () => go(b.dataset.go)));
@@ -553,12 +772,47 @@
   $("#requestSearch").oninput = renderRequests; $("#memberSearch").oninput = renderMembers;
   $("#memberTypeFilter").addEventListener("click", (e) => { const b = e.target.closest("[data-member-filter]"); if (!b) return; $$("#memberTypeFilter button").forEach((x) => x.classList.remove("active")); b.classList.add("active"); memberFilter = b.dataset.memberFilter; renderMembers(); });
   $("#importFundadores").onclick = () => {
+    if (configInstitucional && configInstitucional.cierre_fundacional) {
+      return modal("Nómina fundacional cerrada", `<p style="color:var(--muted);font-size:13px">La nómina de fundadores quedó cerrada técnicamente${configInstitucional.cierre_fundacional_por ? ` por ${esc(configInstitucional.cierre_fundacional_por)}` : ""}${configInstitucional.cierre_fundacional_fecha ? ` el ${esc(fmtDate(configInstitucional.cierre_fundacional_fecha))}` : ""}. Ya no se pueden importar ni agregar fundadores nuevos — solo corregir datos de un fundador existente, abriendo su ficha en el Libro de Socios.</p><div style="display:flex;justify-content:flex-end;margin-top:16px"><button class="btn btn-primary" id="fCierreOk">Entendido</button></div>`), void ($("#fCierreOk").onclick = closeModal);
+    }
+    if (!requireProfileGuard()) return;
     modal("Importar fundadores", `<p style="color:var(--muted);font-size:12px">La nómina de fundadores es cerrada. Esta herramienta solo completa la carga inicial. Columnas mínimas: <strong>numero_socio, apellidos_nombres, cedula</strong>.</p><div class="formfield"><label>Planilla Excel o CSV</label><input id="founderFile" type="file" accept=".xlsx,.xls,.csv"></div><div id="founderImportStatus" style="margin-top:12px;font-size:12px;color:var(--muted)"></div><div style="display:flex;justify-content:flex-end;margin-top:16px"><button class="btn btn-primary" id="founderValidate">Validar e importar</button></div>`);
     $("#founderValidate").onclick=async()=>{const file=$("#founderFile").files?.[0],status=$("#founderImportStatus");if(!file)return toast("Elegí una planilla");try{const data=await file.arrayBuffer(),book=XLSX.read(data),rows=XLSX.utils.sheet_to_json(book.Sheets[book.SheetNames[0]],{defval:""});if(!rows.length)throw Error("La planilla está vacía");const clean=rows.map((row,i)=>{const numero=String(row.numero_socio||row["N.º de socio"]||row.numero||"").trim(),name=String(row.apellidos_nombres||row.nombre||row["Apellidos y Nombres"]||"").trim(),cedula=String(row.cedula||row["Cédula"]||"").trim();if(!numero||!name||!cedula)throw Error(`Fila ${i+2}: faltan número, nombre o cédula`);return{id:String(row.id||`fundador-${Date.now()}-${i}`),tipo_socio:"fundador",estado:"aprobado",numero_socio:numero.padStart(4,"0"),apellidos_nombres:name,cedula,celular_whatsapp:String(row.celular_whatsapp||row.celular||""),correo_electronico:String(row.correo_electronico||row.correo||""),created_at:row.created_at||now(),fecha_constitucion:FECHA_CONSTITUCION,datos_pendiente_revision:false}});const numbers=new Set(),ids=new Set();clean.forEach((r)=>{if(numbers.has(r.numero_socio))throw Error(`Número duplicado: ${r.numero_socio}`);if(ids.has(r.cedula))throw Error(`Cédula duplicada: ${r.cedula}`);numbers.add(r.numero_socio);ids.add(r.cedula)});for(const r of clean){const existing=solicitudes.find((x)=>tipoSocio(x)==="fundador"&&(x.cedula===r.cedula||x.numero_socio===r.numero_socio));if(existing)Object.assign(existing,r,{id:existing.id});else solicitudes.push(r);saveSolicitudes(existing||r)}status.textContent=`${clean.length} fundador(es) importados correctamente.`;log(`${config.administrador} importó ${clean.length} socio(s) fundador(es)`);renderAll();toast("Importación completada")}catch(err){status.textContent=err.message;status.style.color="var(--danger)"}};
   };
-  $("#globalSearch").addEventListener("keydown", (e) => { if (e.key === "Enter") { go("socios"); $("#memberSearch").value = e.target.value; renderMembers(); } });
+  // Búsqueda global real: recorre socios admitidos, solicitudes en curso y
+  // pre-registros (en ese orden de prioridad) y abre la sección correcta —
+  // antes solo miraba el Libro de Socios, aunque el placeholder prometía
+  // buscar también solicitudes y cédulas de pre-registro.
+  function globalSearch(raw) {
+    const q = (raw || "").trim().toLowerCase();
+    if (!q) return;
+    const socio = solicitudes.find((r) => r.estado === "aprobado" && `${nombre(r)} ${r.cedula || ""} ${r.numero_socio || ""}`.toLowerCase().includes(q));
+    if (socio) {
+      go("socios"); memberFilter = "todos";
+      $$("#memberTypeFilter button").forEach((x) => x.classList.toggle("active", x.dataset.memberFilter === "todos"));
+      $("#memberSearch").value = raw; renderMembers();
+      return toast(`Encontrado en Libro de Socios: ${nombre(socio)}`);
+    }
+    const solicitud = solicitudes.find((r) => r.estado !== "aprobado" && `${nombre(r)} ${r.cedula || ""} ${r.numero_solicitud || ""}`.toLowerCase().includes(q));
+    if (solicitud) {
+      go("solicitudes"); filter = "todos";
+      $$(".filters button").forEach((x) => x.classList.toggle("active", x.dataset.filter === "todos"));
+      $("#requestSearch").value = raw; renderRequests();
+      return toast(`Encontrado en Solicitudes: ${nombre(solicitud)}`);
+    }
+    const lead = leads.find((r) => `${r.nombre_contacto || ""} ${r.celular_whatsapp || ""}`.toLowerCase().includes(q));
+    if (lead) { go("preregistros"); return toast(`Encontrado en Pre-registros: ${lead.nombre_contacto}`); }
+    toast(`Sin resultados para "${raw}"`);
+  }
+  const globalSearchInput = $("#globalSearch"), globalSearchClear = $("#globalSearchClear");
+  globalSearchInput.addEventListener("input", () => { globalSearchClear.hidden = !globalSearchInput.value; });
+  globalSearchInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") globalSearch(globalSearchInput.value);
+    if (e.key === "Escape") { globalSearchInput.value = ""; globalSearchClear.hidden = true; globalSearchInput.blur(); }
+  });
+  globalSearchClear.onclick = () => { globalSearchInput.value = ""; globalSearchClear.hidden = true; globalSearchInput.focus(); };
   $("#newLeadBtn").onclick = () => leadModal(null); $("#modalClose").onclick = closeModal; $("#modalBack").onclick = (e) => { if (e.target === $("#modalBack")) closeModal(); };
-  $("#bellBtn").onclick = () => toast(`${solicitudes.filter((r) => r.estado === "pendiente").length + leads.filter((r) => ["pendiente", "enviado"].includes(r.estado)).length} asunto(s) pendiente(s)`);
+  $("#bellBtn").onclick = () => toast(`${solicitudes.filter((r) => r.estado === "pendiente").length + leads.filter((r) => ["pendiente", "enviado", "preparado", "iniciado"].includes(r.estado)).length} asunto(s) pendiente(s)`);
   $("#profileBtn").onclick = openProfile;
   $("#exportBtn").onclick = () => { const cols = ["numero_solicitud", "apellidos_nombres", "cedula", "celular_whatsapp", "estado", "numero_socio", "resolucion_numero", "created_at"]; const csv = [cols.join(",")].concat(solicitudes.map((r) => cols.map((c) => `"${String(r[c] || "").replace(/"/g, '""')}"`).join(","))).join("\n"); const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" })); a.download = "solicitudes-cimientos.csv"; a.click(); URL.revokeObjectURL(a.href); log(`${config.administrador} exportó las solicitudes`); };
   $("#printMembers").onclick = () => window.print();
@@ -575,8 +829,14 @@
   // el panel, usando el mismo patrón de Ritual Ancestral.
   const loginRequired = typeof LOGIN_REQUIRED !== "undefined" && LOGIN_REQUIRED === true;
 
-  function startApp() {
+  async function startApp() {
     $("#today").textContent = new Intl.DateTimeFormat("es-PY", { weekday: "long", day: "numeric", month: "long", year: "numeric" }).format(new Date());
+    if (supabaseClient) {
+      // El perfil y la configuración institucional definen permisos
+      // (rol, cierre de fundadores), así que se cargan ANTES de pintar
+      // el panel para que los botones ya aparezcan bien habilitados/deshabilitados.
+      await Promise.all([cargarPerfilActual(), cargarConfigInstitucional()]);
+    }
     decorateIcons(); updateProfileUI(); augmentSettings(); renderAll();
     // Si Supabase está configurado, lo local se ve primero (instantáneo)
     // y se actualiza apenas llega la respuesta del servidor.
