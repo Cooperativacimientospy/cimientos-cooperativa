@@ -956,7 +956,27 @@
         return;
       }
       p.innerHTML=head("Seguridad","Protección local mientras no exista autenticación.")+`<div class="formgrid"><div class="formfield"><label>PIN de 4 a 6 números</label><input id="pin" type="password" maxlength="6" value="${esc(config.pin||"")}"></div><div class="formfield"><label>Confirmar eliminaciones</label><select id="confirmDelete"><option value="1">Sí</option><option value="0">No</option></select></div></div><button class="btn btn-primary" id="saveSecurity" style="margin-top:14px">Guardar</button>`;$("#saveSecurity").onclick=()=>{const v=$("#pin").value;if(v&&!/^\d{4,6}$/.test(v))return toast("PIN inválido");config.pin=v;config.confirmarBorrado=$("#confirmDelete").value==="1";write(KEYS.config,config);toast("Seguridad guardada")};return; }
-    if (name === "respaldo") { p.innerHTML=head("Respaldo","Descargá, restaurá o limpiá la base local.")+`<p><strong>${solicitudes.length}</strong> solicitudes · <strong>${leads.length}</strong> pre-registros</p><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-primary" id="backupBtn">Descargar</button><label class="btn btn-secondary">Importar<input id="restoreInput" type="file" accept="application/json" hidden></label><button class="btn" style="background:var(--danger);color:white" id="clearData">Borrar datos</button></div>`;$("#backupBtn").onclick=()=>{const a=document.createElement("a"),blob=new Blob([JSON.stringify({app:"Cimientos Beta Local",solicitudes,leads,actividad,config},null,2)],{type:"application/json"});a.href=URL.createObjectURL(blob);a.download="respaldo-cimientos.json";a.click()};$("#restoreInput").onchange=e=>{const f=e.target.files[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{try{const d=JSON.parse(rd.result);if(d.app!=="Cimientos Beta Local")throw Error("Archivo no válido");solicitudes=d.solicitudes||[];leads=d.leads||[];actividad=d.actividad||[];config=Object.assign({},DEFAULTS,d.config||{});saveSolicitudes();saveLeads();write(KEYS.actividad,actividad);write(KEYS.config,config);renderAll();renderSetting(name)}catch(x){toast(x.message)}};rd.readAsText(f)};$("#clearData").onclick=()=>{if(!confirm("¿Borrar todos los datos locales?"))return;solicitudes=[];leads=[];actividad=[];saveSolicitudes();saveLeads();write(KEYS.actividad,[]);renderAll();renderSetting(name)}; }
+    if (name === "respaldo") {
+      const cloud = !!supabaseClient;
+      const canClear = !cloud || esSuperadmin();
+      p.innerHTML = head("Respaldo", cloud ? "Descargá un respaldo o limpiá los datos operativos del sistema." : "Descargá, restaurá o limpiá la base local.") + `<p><strong>${solicitudes.length}</strong> solicitudes · <strong>${leads.length}</strong> pre-registros</p><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-primary" id="backupBtn">Descargar</button><label class="btn btn-secondary">Importar<input id="restoreInput" type="file" accept="application/json" hidden></label>${canClear ? '<button class="btn" style="background:var(--danger);color:white" id="clearData">Borrar todos los datos</button>' : ""}</div>${cloud ? '<p class="muted" style="margin-top:12px">El borrado conserva los usuarios y la configuración institucional para que el panel siga siendo accesible.</p>' : ""}`;
+      $("#backupBtn").onclick = () => { const a = document.createElement("a"), blob = new Blob([JSON.stringify({ app: "Cimientos Beta Local", solicitudes, leads, actividad, config }, null, 2)], { type: "application/json" }); a.href = URL.createObjectURL(blob); a.download = "respaldo-cimientos.json"; a.click(); };
+      $("#restoreInput").onchange = e => { const f = e.target.files[0]; if (!f) return; const rd = new FileReader(); rd.onload = () => { try { const d = JSON.parse(rd.result); if (d.app !== "Cimientos Beta Local") throw Error("Archivo no válido"); solicitudes = d.solicitudes || []; leads = d.leads || []; actividad = d.actividad || []; config = Object.assign({}, DEFAULTS, d.config || {}); saveSolicitudes(); saveLeads(); write(KEYS.actividad, actividad); write(KEYS.config, config); renderAll(); renderSetting(name); } catch (x) { toast(x.message); } }; rd.readAsText(f); };
+      if ($("#clearData")) $("#clearData").onclick = async () => {
+        const confirmation = prompt('Esta acción elimina solicitudes, pre-registros, socios, pagos, tareas, documentos, campañas, resoluciones, actividad y auditorías. Para continuar escribí "BORRAR TODO":');
+        if (confirmation !== "BORRAR TODO") return toast("Borrado cancelado");
+        try {
+          if (cloud) {
+            const { error } = await supabaseClient.rpc("fn_borrar_datos_operativos");
+            if (error) throw error;
+          }
+          solicitudes = []; leads = []; actividad = [];
+          [KEYS.solicitudes, KEYS.leads, KEYS.actividad, "cimientos_operaciones_v1"].forEach(key => localStorage.removeItem(key));
+          toast("Datos operativos eliminados definitivamente");
+          setTimeout(() => location.reload(), 500);
+        } catch (err) { toast(friendlyError(err, "No se pudieron borrar todos los datos")); }
+      };
+    }
   }
 
   function initials(name) { return String(name || "A").trim().split(/\s+/).slice(0, 2).map(x => x[0]).join("").toUpperCase(); }
