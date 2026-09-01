@@ -1113,6 +1113,14 @@
       if (error) { if (loginError) { loginError.textContent = "Correo o contraseña incorrectos."; loginError.style.display = "block"; } return; }
       showPanel(); startApp();
     });
+    if ($("#recoverAccessBtn")) $("#recoverAccessBtn").onclick = async () => {
+      const email = $("#loginEmail").value.trim();
+      if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { if (loginError) { loginError.textContent = "Escribí primero tu correo de acceso."; loginError.style.display = "block"; } return; }
+      $("#recoverAccessBtn").disabled = true;
+      const { error } = await supabaseClient.auth.resetPasswordForEmail(email, { redirectTo: `${siteBase()}/panel.html?invite=1` });
+      $("#recoverAccessBtn").disabled = false;
+      if (loginError) { loginError.textContent = error ? "No se pudo enviar el correo. Intentá nuevamente." : "Te enviamos un correo para crear o recuperar tu contraseña."; loginError.style.display = "block"; }
+    };
     if (logoutBtn) logoutBtn.addEventListener("click", async () => {
       [KEYS.solicitudes, KEYS.leads, KEYS.actividad].forEach((key) => localStorage.removeItem(key));
       await supabaseClient.auth.signOut();
