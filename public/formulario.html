@@ -862,7 +862,6 @@
       referente_cedula: val("referente_cedula"),
       beneficiarios: beneficiarios.filter((b) => b.nombre && b.nombre.trim()),
       declaracion_jurada: document.getElementById("declaracion_jurada").checked,
-      firma_base64: null,
       tipo_socio: esFundador ? "fundador" : "ordinario",
       origen_registro: flujoAdministrativo ? "presencial_panel" : "formulario_publico",
       pre_registro_id: preRegistroId || null,

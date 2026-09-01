@@ -395,13 +395,15 @@
       $("#reqContributions").onclick = () => { closeModal(); go("aportes"); setTimeout(() => { const input = $("#opContributionSearch"); if (input) { input.value = r.cedula || r.numero_socio || nombre(r); input.dispatchEvent(new Event("input", { bubbles: true })); } }, 40); };
       return;
     }
-    modal(`Solicitud #${r.numero_solicitud || "—"}`, `${photoPickerHtml(r)}<div class="detailgrid">${detail("Solicitante", nombre(r))}${detail("Cédula", r.cedula)}${detail("Nacimiento", fmtDate(r.fecha_nacimiento))}${detail("Celular", tel(r))}${detail("Contacto preferido", r.contacto_preferido)}${detail("Ciudad", [r.ciudad, r.departamento].filter(Boolean).join(", "))}${detail("Dirección", r.direccion)}${detail("Vivienda", r.tipo_vivienda)}${detail("Actividad", r.condicion_laboral)}${detail("Empresa / RUC", r.empresa_ruc)}${detail("Cargo", r.cargo_laboral)}${detail("Antigüedad laboral", r.antiguedad_laboral)}${detail("Dirección laboral", r.direccion_laboral)}${detail("Cargo público/político", r.cargo_publico)}${detail("Trabajo en ONG", r.trabajo_ong)}${detail("Origen de fondos", r.origen_fondos)}${detail("Referente", r.referente_nombre)}${detail("Forma de pago", r.forma_pago)}${detail("Derecho de admisión", fmtGs(r.derecho_admision || 150000))}${detail("Beneficiarios", beneficiaries)}</div><div class="formfield"><label>Notas administrativas</label><textarea id="requestNotes" rows="3" style="width:100%;border:1px solid var(--line);border-radius:12px;padding:10px">${esc(r.notas_admin || "")}</textarea></div><div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;margin-top:16px"><button class="btn btn-whatsapp" id="reqWhatsApp">WhatsApp</button><button class="btn btn-secondary" id="reqPrint">Imprimir ficha</button><button class="btn btn-secondary" id="reqObserve">Observar</button><button class="btn" style="background:var(--danger);color:white" id="reqReject">Rechazar</button><button class="btn btn-primary" id="reqApprove">Aprobar</button></div>`);
+    const canDeleteRequest = !supabaseClient || (perfilActual && ["superadministrador", "admision"].includes(perfilActual.rol));
+    modal(`Solicitud #${r.numero_solicitud || "—"}`, `${photoPickerHtml(r)}<div class="detailgrid">${detail("Solicitante", nombre(r))}${detail("Cédula", r.cedula)}${detail("Nacimiento", fmtDate(r.fecha_nacimiento))}${detail("Celular", tel(r))}${detail("Contacto preferido", r.contacto_preferido)}${detail("Ciudad", [r.ciudad, r.departamento].filter(Boolean).join(", "))}${detail("Dirección", r.direccion)}${detail("Vivienda", r.tipo_vivienda)}${detail("Actividad", r.condicion_laboral)}${detail("Empresa / RUC", r.empresa_ruc)}${detail("Cargo", r.cargo_laboral)}${detail("Antigüedad laboral", r.antiguedad_laboral)}${detail("Dirección laboral", r.direccion_laboral)}${detail("Cargo público/político", r.cargo_publico)}${detail("Trabajo en ONG", r.trabajo_ong)}${detail("Origen de fondos", r.origen_fondos)}${detail("Referente", r.referente_nombre)}${detail("Forma de pago", r.forma_pago)}${detail("Derecho de admisión", fmtGs(r.derecho_admision || 150000))}${detail("Beneficiarios", beneficiaries)}</div><div class="formfield"><label>Notas administrativas</label><textarea id="requestNotes" rows="3" style="width:100%;border:1px solid var(--line);border-radius:12px;padding:10px">${esc(r.notas_admin || "")}</textarea></div><div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;margin-top:16px">${canDeleteRequest ? '<button class="btn" style="background:var(--danger);color:white;margin-right:auto" id="reqDelete">Eliminar solicitud</button>' : ""}<button class="btn btn-whatsapp" id="reqWhatsApp">WhatsApp</button><button class="btn btn-secondary" id="reqPrint">Imprimir ficha</button><button class="btn btn-secondary" id="reqObserve">Observar</button><button class="btn" style="background:var(--danger);color:white" id="reqReject">Rechazar</button><button class="btn btn-primary" id="reqApprove">Aprobar</button></div>`);
     wirePhotoPicker(r);
     $("#reqWhatsApp").onclick = () => shareMemberWhatsApp(r);
     $("#reqPrint").onclick = () => printRequest(r);
     $("#reqObserve").onclick = busyClick($("#reqObserve"), () => updateRequest(r, "observada"));
     $("#reqReject").onclick = busyClick($("#reqReject"), () => updateRequest(r, "rechazado"));
     $("#reqApprove").onclick = () => approveRequest(r);
+    if ($("#reqDelete")) $("#reqDelete").onclick = () => removeRequest(r);
   }
   function requireProfileGuard() {
     if (supabaseClient && !puedeGestionar()) { toast("Tu rol (solo lectura) no permite hacer esto"); return false; }
@@ -412,6 +414,22 @@
     const msg=`Hola ${nombre(r)}, te enviamos tu ficha de la Cooperativa Cimientos${r.numero_socio?` (Socio N.º ${r.numero_socio})`:""}. En esta beta local, abrí primero “Imprimir ficha”, guardala como PDF y adjuntala a este chat.`;
     if (!abrirWhatsApp(tel(r), msg)) return;
     log(`Se preparó el envío de ficha por WhatsApp para ${nombre(r)}`);
+  }
+  async function removeRequest(r) {
+    if (!requireProfileGuard()) return;
+    const motivo = prompt(`Motivo para eliminar la solicitud de ${nombre(r)}:`);
+    if (!motivo || !motivo.trim()) return toast("La eliminación requiere un motivo.");
+    if (!confirm("Esta acción elimina una solicitud no admitida. La auditoría conservará quién la eliminó y el motivo. ¿Continuar?")) return;
+    try {
+      if (supabaseClient) {
+        const { error } = await supabaseClient.rpc("fn_eliminar_solicitud", { p_id: r.id, p_motivo: motivo.trim() });
+        if (error) throw error;
+      }
+      solicitudes = solicitudes.filter((item) => item.id !== r.id);
+      write(KEYS.solicitudes, solicitudes);
+      log(`${perfilActual ? perfilActual.nombre : config.administrador} eliminó la solicitud de ${nombre(r)}. Motivo: ${motivo.trim()}`);
+      closeModal(); renderAll(); toast("Solicitud eliminada con auditoría");
+    } catch (err) { toast(friendlyError(err, "No se pudo eliminar la solicitud")); }
   }
   async function updateRequest(r, estado) {
     if (!requireProfileGuard()) return;
@@ -727,14 +745,14 @@
             write(KEYS.leads, leads);
             log(`Se preparó el enlace de admisión para ${r.nombre_contacto}`);
             renderAll();
-            return base + "/formulario.html?pre=" + encodeURIComponent(token);
+            return base + "/formulario.html?v=20260901-2&pre=" + encodeURIComponent(token);
           } catch (err) { toast(friendlyError(err, "No se pudo generar el enlace")); return null; }
         }
         // Sin Supabase configurado: no hay dónde resolver un token server-side,
         // así que el link cae de vuelta al formulario sin datos personales
         // en la URL (la persona completa su nombre/celular a mano).
         r.estado = "preparado"; saveLeads(r); renderAll();
-        return base + "/formulario.html";
+        return base + "/formulario.html?v=20260901-2";
       }
       $("#leadCopyLink").onclick = busyClick($("#leadCopyLink"), async () => {
         const link = await prepararLink(); if (!link) return;
@@ -864,7 +882,7 @@
       if (esSuperadmin()) $("#inviteStaff").onclick = () => {
         modal("Invitar funcionario", `<form id="inviteStaffForm" class="op-form"><label>Nombre completo<input required name="nombre" autocomplete="name"></label><label>Correo personal o institucional<input required type="email" name="email" autocomplete="email"></label><label>Teléfono<input name="telefono" inputmode="tel"></label><label>Cargo<input required name="cargo" placeholder="Ej. Tesorería"></label><label>Rol<select name="rol">${Object.entries(ROL_LABEL).filter(([value]) => value !== "superadministrador").map(([value,label]) => `<option value="${value}">${esc(label)}</option>`).join("")}</select></label><div class="op-wide"><small>Recibirá un correo seguro para crear su contraseña. No hace falta entrar al panel técnico de Supabase.</small></div><div class="op-wide" style="display:flex;justify-content:flex-end;gap:8px"><button type="button" class="btn btn-secondary" id="cancelInvite">Cancelar</button><button class="btn btn-primary">Enviar invitación</button></div></form>`);
         $("#cancelInvite").onclick = closeModal;
-        $("#inviteStaffForm").onsubmit = async (e) => { e.preventDefault(); const values = Object.fromEntries(new FormData(e.target)); const submit = e.submitter; submit.disabled = true; try { const { data, error } = await supabaseClient.functions.invoke("administrar-usuarios", { body: { action: "invite", ...values, redirectTo: `${siteBase()}/panel.html` } }); if (error) throw error; if (data && data.error) throw Error(data.error); closeModal(); toast("Invitación enviada"); renderSetting("funcionarios"); } catch (err) { submit.disabled = false; toast(friendlyError(err, "No se pudo enviar la invitación")); } };
+        $("#inviteStaffForm").onsubmit = async (e) => { e.preventDefault(); const values = Object.fromEntries(new FormData(e.target)); const submit = e.submitter; submit.disabled = true; try { const { data, error } = await supabaseClient.functions.invoke("administrar-usuarios", { body: { action: "invite", ...values, redirectTo: `${siteBase()}/panel.html?invite=1` } }); if (error) throw error; if (data && data.error) throw Error(data.error); closeModal(); toast("Invitación enviada"); renderSetting("funcionarios"); } catch (err) { submit.disabled = false; toast(friendlyError(err, "No se pudo enviar la invitación")); } };
       };
       supabaseClient.from("perfiles_admin").select("*").order("created_at", { ascending: true }).then(({ data, error }) => {
         if (error) { $("#staffList").innerHTML = `<div class="empty">${esc(error.message)}</div>`; return; }
@@ -1061,6 +1079,12 @@
     // Si Supabase está configurado, lo local se ve primero (instantáneo)
     // y se actualiza apenas llega la respuesta del servidor.
     cargarDesdeSupabase();
+    if (new URLSearchParams(location.search).get("invite") === "1") {
+      setTimeout(() => {
+        modal("Crear tu contraseña", `<p style="color:var(--muted);font-size:12px">Tu invitación fue aceptada. Elegí una contraseña de al menos 8 caracteres para ingresar al panel.</p><div class="formfield"><label>Nueva contraseña</label><input id="invitePassword" type="password" minlength="8" autocomplete="new-password"></div><div style="display:flex;justify-content:flex-end;margin-top:16px"><button class="btn btn-primary" id="saveInvitePassword">Guardar contraseña</button></div>`);
+        $("#saveInvitePassword").onclick = async () => { const password = $("#invitePassword").value; if (password.length < 8) return toast("La contraseña debe tener al menos 8 caracteres"); const { error } = await supabaseClient.auth.updateUser({ password }); if (error) return toast("No se pudo guardar la contraseña"); history.replaceState({}, "", "panel.html"); closeModal(); toast("Contraseña creada. Ya podés usar el panel."); };
+      }, 250);
+    }
   }
 
   async function initAuthGate() {
