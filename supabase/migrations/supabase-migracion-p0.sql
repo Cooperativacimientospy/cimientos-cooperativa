@@ -367,7 +367,7 @@ declare
   v_token text;
 begin
   if auth.uid() is null then raise exception 'No autenticado'; end if;
-  v_token := replace(replace(replace(encode(gen_random_bytes(18), 'base64'), '/', '_'), '+', '-'), '=', '');
+  v_token := replace(replace(replace(encode(extensions.gen_random_bytes(18), 'base64'), '/', '_'), '+', '-'), '=', '');
   update public.pre_registros
     set token = v_token, token_expira_at = now() + interval '7 days', estado = 'preparado'
     where id = p_id
