@@ -1,30 +1,17 @@
--- Cooperativa Cimientos — P4 borrado real y limpieza integral
+-- Cooperativa Cimientos — P5 corrección de limpieza integral
+-- Los archivos se eliminan desde la API oficial de Storage antes de invocar
+-- esta función. Supabase bloquea el DELETE directo sobre storage.objects.
 begin;
 
-create or replace function public.fn_eliminar_movimiento_aporte(p_id uuid)
-returns boolean
-language plpgsql
-security definer
-set search_path = ''
-as $$
-declare v_row public.movimientos_aportes%rowtype;
-begin
-  if auth.uid() is null then raise exception 'Autenticación requerida'; end if;
-  if public.fn_rol_actual() not in ('superadministrador','tesoreria') then
-    raise exception 'Solo Tesorería o un superadministrador pueden eliminar pagos';
-  end if;
-  select * into v_row from public.movimientos_aportes where id = p_id for update;
-  if not found then raise exception 'El pago ya no existe'; end if;
-  if v_row.concepto = 'capital_inicial' and v_row.estado <> 'anulada' then
-    update public.solicitudes_socios
-      set capital_integrado = greatest(0, coalesce(capital_integrado,0) - v_row.aporte)
-      where id = v_row.socio_id;
-  end if;
-  delete from public.movimientos_aportes where id = p_id;
-  return true;
-end; $$;
-revoke all on function public.fn_eliminar_movimiento_aporte(uuid) from public, anon;
-grant execute on function public.fn_eliminar_movimiento_aporte(uuid) to authenticated;
+drop policy if exists expedientes_delete_superadmin on storage.objects;
+create policy expedientes_delete_superadmin
+on storage.objects
+for delete
+to authenticated
+using (
+  bucket_id = 'expedientes'
+  and public.fn_rol_actual() = 'superadministrador'
+);
 
 create or replace function public.fn_borrar_datos_operativos()
 returns jsonb
@@ -57,6 +44,7 @@ begin
   perform setval('public.recibos_numero_seq', 1, false);
   return v_result;
 end; $$;
+
 revoke all on function public.fn_borrar_datos_operativos() from public, anon;
 grant execute on function public.fn_borrar_datos_operativos() to authenticated;
 

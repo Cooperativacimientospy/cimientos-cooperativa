@@ -857,7 +857,15 @@
 
   function renderMembers() {
     const q = ($("#memberSearch").value || "").toLowerCase();
-    const rows = solicitudes.filter((r) => r.estado === "aprobado" && (memberFilter === "todos" || tipoSocio(r) === memberFilter) && `${nombre(r)} ${r.cedula || ""} ${r.numero_socio || ""}`.toLowerCase().includes(q));
+    const rows = solicitudes
+      .filter((r) => r.estado === "aprobado" && (memberFilter === "todos" || tipoSocio(r) === memberFilter) && `${nombre(r)} ${r.cedula || ""} ${r.numero_socio || ""}`.toLowerCase().includes(q))
+      .sort((a, b) => {
+        const numeroA = Number.parseInt(a.numero_socio, 10);
+        const numeroB = Number.parseInt(b.numero_socio, 10);
+        if (Number.isFinite(numeroA) && Number.isFinite(numeroB) && numeroA !== numeroB) return numeroA - numeroB;
+        if (Number.isFinite(numeroA) !== Number.isFinite(numeroB)) return Number.isFinite(numeroA) ? -1 : 1;
+        return nombre(a).localeCompare(nombre(b), "es", { sensitivity: "base" });
+      });
     $("#membersBody").innerHTML = rows.map((r) => `<tr><td><strong>${esc(r.numero_socio || "s/n")}</strong></td><td><strong>${esc(nombre(r))}</strong>${tipoSocio(r) === "fundador" ? ' <span style="color:var(--green);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em">· Fundador</span>' : ""}</td><td>${esc(r.cedula || "—")}</td><td>${fmtDate(r.fecha_revision || r.created_at)}</td><td>${r.datos_pendiente_revision ? '<span class="badge pendiente">Por revisar</span>' : badge("activo")}</td><td><button class="linkbtn" data-member="${esc(r.id)}">Abrir ficha</button></td></tr>`).join("") || '<tr><td colspan="6" class="empty">Todavía no hay socios aprobados.</td></tr>';
     $$('[data-member]').forEach((b) => b.onclick = () => openRequest(b.dataset.member));
   }
@@ -967,6 +975,13 @@
         if (confirmation !== "BORRAR TODO") return toast("Borrado cancelado");
         try {
           if (cloud) {
+            const { data: storedDocuments, error: documentError } = await supabaseClient.from("documentos_socios").select("storage_path").not("storage_path", "is", null);
+            if (documentError) throw documentError;
+            const storedPaths = (storedDocuments || []).map(row => row.storage_path).filter(Boolean);
+            for (let index = 0; index < storedPaths.length; index += 1000) {
+              const { error: storageError } = await supabaseClient.storage.from("expedientes").remove(storedPaths.slice(index, index + 1000));
+              if (storageError) throw storageError;
+            }
             const { error } = await supabaseClient.rpc("fn_borrar_datos_operativos");
             if (error) throw error;
           }
