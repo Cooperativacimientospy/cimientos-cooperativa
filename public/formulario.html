@@ -4,6 +4,9 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
 <title>Solicitud de Admisión — Cooperativa Cimientos</title>
+<link rel="icon" type="image/png" sizes="512x512" href="assets/favicon-512.png" />
+<link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png" />
+<link rel="apple-touch-icon" href="assets/favicon-180.png" />
 <link rel="stylesheet" href="fonts.css" />
 <link rel="stylesheet" href="styles-formulario.css" />
 </head>
@@ -16,7 +19,7 @@
 
 <div class="page">
   <div class="brand">
-    <div class="brand-mark">C</div>
+    <div class="brand-mark"><img src="assets/logo-icon-final.png" alt="Cooperativa Cimientos"></div>
     <div class="brand-text">
       <strong>Cooperativa Cimientos Ltda.</strong>
       <span id="brandTagline">Solicitud de admisión de socio</span>
@@ -219,7 +222,7 @@
             </div>
             <div class="field">
               <label for="monto_aporte_inicial">Monto del adelanto</label>
-              <input type="number" id="monto_aporte_inicial" min="0" placeholder="Gs. (opcional)" />
+              <input type="text" id="monto_aporte_inicial" inputmode="numeric" data-money placeholder="Gs. (opcional)" />
             </div>
           </div>
         </section>
@@ -251,11 +254,11 @@
           <button type="button" class="add-link" id="addBeneficiario">+ Agregar beneficiario</button>
         </section>
 
-        <!-- PASO 7 — Declaración jurada y firma -->
+        <!-- PASO 7 — Declaración jurada y confirmación -->
         <section class="step" data-step="6" hidden>
           <div class="step-label">Paso 7 de 7</div>
-          <h2 class="step-title">Confirmá y firmá</h2>
-          <p class="step-help">Revisá que tus datos estén bien antes de firmar.</p>
+          <h2 class="step-title">Revisá y confirmá</h2>
+          <p class="step-help">Comprobá que tus datos estén bien antes de enviar la solicitud.</p>
 
           <div class="summary-block">
             <div class="summary-group">
@@ -301,7 +304,7 @@
           <a class="estatuto-link" id="estatutoLinkMid" href="estatuto-cimientos.html" target="_blank" rel="noopener">
             <span class="estatuto-icon">📄</span>
             <span class="estatuto-text">
-              <strong>Leé el Estatuto Social antes de firmar</strong>
+              <strong>Leé el Estatuto Social antes de confirmar</strong>
               <span>Los derechos, deberes y normas que aceptás al asociarte</span>
             </span>
             <span class="estatuto-go">Abrir ↗</span>
@@ -312,17 +315,6 @@
               <input type="checkbox" id="declaracion_jurada" required style="margin-top:3px;" />
               <span id="declaracionText">Declaro bajo fe de juramento que los datos consignados son veraces y que los fondos provienen de actividades lícitas (SEPRELAD). Leí y acepto el Estatuto Social, y me comprometo a cumplir sus Reglamentos y resoluciones de la Cooperativa Cimientos Ltda., solicitando mi admisión como socio ordinario. *</span>
             </label>
-          </div>
-
-          <div class="field">
-            <label>Firma del solicitante *</label>
-            <div class="signature-wrap">
-              <canvas id="signaturePad"></canvas>
-            </div>
-            <div class="signature-actions">
-              <span class="muted" id="signatureHint">Firmá con el dedo o el mouse dentro del recuadro</span>
-              <button type="button" id="clearSignature">Limpiar</button>
-            </div>
           </div>
 
           <div id="submitError" class="error-msg" hidden></div>
@@ -396,10 +388,27 @@
   const urlParams = new URLSearchParams(window.location.search);
   const esFundador = urlParams.get("fundador") === "1";
   const flujoAdministrativo = urlParams.get("admin") === "1";
+  // Cuando el panel abre este formulario dentro de la ventana flotante
+  // (iframe), window.self !== window.top. Ahí "Volver al panel" no debe
+  // navegar el iframe a panel.html (quedaría un panel adentro del panel);
+  // en cambio le avisa al panel por postMessage para que cierre la
+  // ventana flotante él mismo.
+  const enVentanaFlotante = flujoAdministrativo && window.self !== window.top;
+
+  // La versión administrativa embebida usa una escala más compacta para
+  // aprovechar la ventana flotante. El formulario público conserva 100%.
+  if (enVentanaFlotante) document.documentElement.classList.add("formulario-embebido");
 
   if (flujoAdministrativo) {
     document.getElementById("adminReturnTop").hidden = false;
     document.getElementById("adminReturnSuccess").hidden = false;
+  }
+  if (enVentanaFlotante) {
+    const cerrarVentanaFlotante = (creada) => {
+      try { parent.postMessage({ tipo: "cimientos:cerrar_formulario", creada: !!creada }, "*"); } catch (_) {}
+    };
+    document.getElementById("adminReturnTop").addEventListener("click", (e) => { e.preventDefault(); cerrarVentanaFlotante(false); });
+    document.getElementById("adminReturnSuccess").addEventListener("click", (e) => { e.preventDefault(); cerrarVentanaFlotante(true); });
   }
 
   // Conservar el contexto (?admin=1 / ?pre=<token> / ?fundador=1) al ir al
@@ -482,7 +491,6 @@
     submitBtn.style.display = isLast ? "inline-flex" : "none";
     if (isLast) {
       fillSummary();
-      ensureCanvasSized();
     }
     if (index === beneficiariosStepIndex) renderBeneficiarios();
     renderProgress();
@@ -552,10 +560,29 @@
     }
   });
 
+  function parseGs(n) {
+    return Number(String(n == null ? "" : n).replace(/[^0-9-]/g, "")) || 0;
+  }
+
   function formatGs(n) {
     if (!n && n !== 0) return "—";
-    return "Gs. " + Number(n).toLocaleString("es-PY");
+    return "Gs. " + parseGs(n).toLocaleString("es-PY");
   }
+
+  document.querySelectorAll("[data-money]").forEach((input) => {
+    const format = () => {
+      if (input.value.trim()) input.value = parseGs(input.value).toLocaleString("es-PY");
+    };
+    input.addEventListener("focus", () => {
+      if (input.value.trim()) input.value = String(parseGs(input.value));
+      input.select();
+    });
+    input.addEventListener("blur", format);
+    input.addEventListener("input", () => {
+      input.value = input.value.replace(/[^0-9]/g, "");
+    });
+    format();
+  });
 
   function formatFecha(fechaStr) {
     if (!fechaStr) return "—";
@@ -793,88 +820,12 @@
     }
   })();
 
-  // ---------------- Firma digital ----------------
-  const canvas = document.getElementById("signaturePad");
-  const ctx = canvas.getContext("2d");
-  let drawing = false;
-  let hasSignature = false;
-
-  let canvasSized = false;
-  function doResizeCanvas() {
-    const rect = canvas.getBoundingClientRect();
-    if (rect.width === 0) return false; // step is hidden right now, try again later
-    const ratio = Math.max(window.devicePixelRatio || 1, 1);
-    const data = hasSignature ? canvas.toDataURL() : null;
-    canvas.width = rect.width * ratio;
-    canvas.height = 180 * ratio;
-    ctx.scale(ratio, ratio);
-    ctx.lineWidth = 2.2;
-    ctx.lineCap = "round";
-    ctx.strokeStyle = "#2e2e2e";
-    if (data) {
-      const img = new Image();
-      img.onload = () => ctx.drawImage(img, 0, 0, rect.width, 180);
-      img.src = data;
-    }
-    canvasSized = true;
-    return true;
-  }
-  // The signature step starts hidden, so the canvas has no real size until
-  // that step is actually shown — call this each time step 7 opens.
-  function ensureCanvasSized() {
-    if (!canvasSized) doResizeCanvas();
-  }
-  window.addEventListener("resize", doResizeCanvas);
-  doResizeCanvas();
-
-  function getPos(e) {
-    const rect = canvas.getBoundingClientRect();
-    const point = e.touches ? e.touches[0] : e;
-    return { x: point.clientX - rect.left, y: point.clientY - rect.top };
-  }
-
-  function startDraw(e) {
-    e.preventDefault();
-    drawing = true;
-    hasSignature = true;
-    const p = getPos(e);
-    ctx.beginPath();
-    ctx.moveTo(p.x, p.y);
-  }
-  function moveDraw(e) {
-    if (!drawing) return;
-    e.preventDefault();
-    const p = getPos(e);
-    ctx.lineTo(p.x, p.y);
-    ctx.stroke();
-  }
-  function endDraw() {
-    drawing = false;
-  }
-
-  canvas.addEventListener("mousedown", startDraw);
-  canvas.addEventListener("mousemove", moveDraw);
-  window.addEventListener("mouseup", endDraw);
-  canvas.addEventListener("touchstart", startDraw, { passive: false });
-  canvas.addEventListener("touchmove", moveDraw, { passive: false });
-  canvas.addEventListener("touchend", endDraw);
-
-  document.getElementById("clearSignature").addEventListener("click", () => {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    hasSignature = false;
-  });
-
   // ---------------- Envío ----------------
   const errorBox = document.getElementById("submitError");
 
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
     if (!validateStep(current)) return;
-
-    if (!hasSignature) {
-      showError("Falta tu firma para poder enviar la solicitud.");
-      return;
-    }
 
     submitBtn.disabled = true;
     document.getElementById("submitBtnLabel").innerHTML = '<span class="spinner"></span>';
@@ -905,13 +856,13 @@
       trabajo_ong: radioVal("trabajo_ong"),
       origen_fondos: val("origen_fondos"),
       cuotas_partes_suscriptas: val("cuotas_partes_suscriptas") ? Number(val("cuotas_partes_suscriptas")) : null,
-      monto_aporte_inicial: val("monto_aporte_inicial") ? Number(val("monto_aporte_inicial")) : null,
+      monto_aporte_inicial: val("monto_aporte_inicial") ? parseGs(val("monto_aporte_inicial")) : null,
       forma_pago: radioVal("forma_pago"),
       referente_nombre: val("referente_nombre"),
       referente_cedula: val("referente_cedula"),
       beneficiarios: beneficiarios.filter((b) => b.nombre && b.nombre.trim()),
       declaracion_jurada: document.getElementById("declaracion_jurada").checked,
-      firma_base64: canvas.toDataURL("image/png"),
+      firma_base64: null,
       tipo_socio: esFundador ? "fundador" : "ordinario",
       origen_registro: flujoAdministrativo ? "presencial_panel" : "formulario_publico",
       pre_registro_id: preRegistroId || null,
@@ -972,6 +923,12 @@
       document.getElementById("successView").hidden = false;
       clearDraft();
       window.scrollTo({ top: 0, behavior: "smooth" });
+      // Avisar al panel (si esto está abierto en su ventana flotante) para
+      // que refresque la tabla de Solicitudes ya mismo, sin esperar a que
+      // la persona cierre la ventana con "Volver al panel".
+      if (enVentanaFlotante) {
+        try { parent.postMessage({ tipo: "cimientos:solicitud_creada" }, "*"); } catch (_) {}
+      }
     } catch (err) {
       console.error(err);
       showError(err && err.message ? err.message : "No pudimos enviar la solicitud. Intentá nuevamente.");

@@ -13,9 +13,9 @@ const SUPABASE_URL = "https://htabclnucpmpfjesxqdt.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_spBwzgttLEBALoI1YFm6hA_Y8vQTKjw";
 
 // El login ya está activo: el panel pide correo y contraseña de
-// Supabase Authentication antes de mostrar cualquier dato. Para
-// sumar a alguien del Consejo, creale su usuario en Supabase >
-// Authentication > Users — no hay alta de funcionarios desde el panel.
+// Supabase Authentication antes de mostrar cualquier dato. Los
+// superadministradores pueden invitar funcionarios desde
+// Configuraciones > Funcionarios (requiere la función segura incluida).
 const LOGIN_REQUIRED = true;
 
 // Ya no se usa: el próximo número de socio lo calcula y asigna el
@@ -25,12 +25,14 @@ const LOGIN_REQUIRED = true;
 // solo para no romper una carga muy vieja del panel sin Supabase.
 const PROXIMO_NUMERO_SOCIO_SUGERIDO = 38;
 
-// Dirección web real donde vive el panel (la que usan para entrar desde
-// el navegador, sin barra al final: https://tu-dominio.com). El panel la
-// usa como respaldo para armar el link del formulario que se manda por
-// WhatsApp en Pre-registro, SOLO para el caso en que alguien abra
-// panel.html como archivo local en vez de entrar por la web (ahí el
+// Dirección web real donde vive el panel — la carpeta que contiene
+// panel.html, sin barra al final (ej. "https://tu-dominio.com" o, si vive
+// en un subdirectorio como GitHub Pages, "https://usuario.github.io/repo").
+// El panel la usa como respaldo para armar el link del formulario que se
+// manda por WhatsApp en Pre-registro, SOLO para el caso en que alguien
+// abra panel.html como archivo local en vez de entrar por la web (ahí el
 // navegador no sabe cuál es "el sitio" y el link sale roto, tipo
-// "file:///formulario"). Si siempre entrás por la web real, podés dejar
-// esto vacío — no hace falta.
+// "file:///formulario.html"). Completada con la dirección real de este
+// proyecto (GitHub Pages). Si la movés a otro dominio, actualizá esta
+// línea; si siempre entrás por la web real, también podés dejarla vacía.
 const SITE_URL = "https://cooperativacimientospy.github.io/cimientos-cooperativa";

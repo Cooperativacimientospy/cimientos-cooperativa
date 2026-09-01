@@ -4,6 +4,9 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Estatuto Social — Cooperativa Cimientos</title>
+<link rel="icon" type="image/png" sizes="512x512" href="assets/favicon-512.png" />
+<link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png" />
+<link rel="apple-touch-icon" href="assets/favicon-180.png" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap" rel="stylesheet" />
@@ -46,16 +49,12 @@
   .brand-mark {
     width: 34px;
     height: 34px;
-    border-radius: 9px;
-    background: linear-gradient(145deg, var(--green), var(--green-dark));
-    color: #fff;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-weight: 800;
-    font-size: 16px;
     flex-shrink: 0;
   }
+  .brand-mark img { width: 100%; height: 100%; object-fit: contain; }
   .brand-text { display: flex; flex-direction: column; line-height: 1.15; }
   .brand-text strong { font-size: 13.5px; }
   .brand-text span { font-size: 11.5px; color: var(--ink-soft); }
@@ -269,7 +268,6 @@
     -webkit-backdrop-filter:blur(24px) saturate(150%);
     padding:10px max(16px,calc((100vw - 900px)/2));
   }
-  .brand-mark { border-radius:13px; box-shadow:0 8px 20px rgba(106,156,32,.24); }
   .topbar-actions a,.topbar-actions button { border-radius:12px; border-color:rgba(46,46,46,.09); background:rgba(255,255,255,.8); }
   .page-header { padding-top:50px; }
   .page-header h1 { letter-spacing:-.025em; }
@@ -299,7 +297,7 @@
 <body>
 
 <div class="topbar">
-  <div class="brand-mark">C</div>
+  <div class="brand-mark"><img src="assets/logo-icon-final.png" alt="Cooperativa Cimientos"></div>
   <div class="brand-text">
     <strong>Cooperativa Cimientos Ltda.</strong>
     <span>Estatuto Social</span>

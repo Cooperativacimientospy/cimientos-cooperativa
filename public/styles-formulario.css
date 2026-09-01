@@ -85,16 +85,15 @@ a {
 .brand-mark {
   width: 38px;
   height: 38px;
-  border-radius: 10px;
-  background: linear-gradient(145deg, var(--green), var(--green-dark));
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #fff;
-  font-weight: 800;
-  font-size: 15px;
-  letter-spacing: -0.5px;
   flex-shrink: 0;
+}
+.brand-mark img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 
 .brand-text {
@@ -1128,7 +1127,6 @@ body {
 .beta-actions a { text-decoration:none; color:var(--charcoal); background:rgba(255,255,255,.84); border:1px solid var(--ios-line); border-radius:12px; padding:8px 11px; font-size:11px; font-weight:700; }
 .page { max-width: 760px; padding: 28px 18px 70px; }
 .brand { margin-bottom: 24px; }
-.brand-mark { border-radius: 14px; box-shadow: 0 9px 22px rgba(106,156,32,.24); }
 .card {
   border: 1px solid var(--ios-line);
   border-radius: var(--ios-radius);
@@ -1196,7 +1194,6 @@ body {
 body { background: radial-gradient(circle at 92% 3%, rgba(106,156,32,.09), transparent 27%), var(--ios-bg); }
 .page { max-width: 980px; padding-top: 34px; }
 .brand { max-width: 920px; margin: 0 auto 26px; }
-.brand-mark { border-radius: 13px; background: var(--green); box-shadow: none; }
 .card { padding: clamp(24px, 4vw, 46px); border-radius: var(--ios-radius); box-shadow: var(--ios-shadow); backdrop-filter: none; }
 .step { max-width: 820px; margin: 0 auto; }
 .step-title { font-size: clamp(28px, 3vw, 38px); line-height: 1.1; }
@@ -1324,4 +1321,11 @@ textarea:focus-visible,
   .page { padding-inline: 10px; }
   .card { padding: 16px 12px; }
   .choice-row .choice, .choice-group .choice { padding: 10px 12px; }
+}
+
+/* El formulario abierto dentro del panel se muestra un 15% más compacto.
+   En tablet angosta y móvil se mantiene al 100% para conservar lectura y
+   objetivos táctiles cómodos. No afecta el enlace público del formulario. */
+@media (min-width: 801px) {
+  html.formulario-embebido { zoom: .85; }
 }
