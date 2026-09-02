@@ -65,6 +65,8 @@
 
           <div class="row2">
             <div class="field">
+              <label for="lugar_nacimiento">Lugar de nacimiento</label>
+              <input type="text" id="lugar_nacimiento" maxlength="150" placeholder="Ciudad y país" />
               <label for="nacionalidad">Nacionalidad *</label>
               <input type="text" id="nacionalidad" value="Paraguaya" required />
             </div>
@@ -161,6 +163,8 @@
           </div>
 
           <div class="field">
+            <label for="ingreso_mensual">Ingreso mensual aproximado (Gs.)</label>
+            <input type="text" id="ingreso_mensual" inputmode="numeric" maxlength="18" placeholder="Ej. 3.000.000" />
             <label for="empresa_ruc">Empresa / RUC</label>
             <input type="text" id="empresa_ruc" />
           </div>
@@ -693,9 +697,13 @@
   });
 
   // ---------------- Borrador (localStorage) ----------------
+  document.getElementById("ingreso_mensual").addEventListener("input", e => {
+    const digits = e.target.value.replace(/\D/g, "").slice(0,14);
+    e.target.value = digits ? Number(digits).toLocaleString("es-PY") : "";
+  });
   const DRAFT_KEY = esFundador ? "cimientos_fundador_draft" : "cimientos_solicitud_draft";
   const draftFieldIds = [
-    "apellidos_nombres", "cedula", "fecha_nacimiento", "nacionalidad", "estado_civil",
+    "apellidos_nombres", "cedula", "fecha_nacimiento", "lugar_nacimiento", "ingreso_mensual", "nacionalidad", "estado_civil",
     "profesion_oficio", "ciudad", "barrio", "departamento", "tipo_vivienda", "direccion", "celular_whatsapp",
     "correo_electronico", "empresa_ruc", "cargo_laboral", "antiguedad_laboral", "direccion_laboral", "origen_fondos", "cuotas_partes_suscriptas",
     "monto_aporte_inicial", "referente_nombre", "referente_cedula",
@@ -837,6 +845,8 @@
       estado_civil: val("estado_civil"),
       cedula: val("cedula"),
       fecha_nacimiento: val("fecha_nacimiento"),
+      lugar_nacimiento: val("lugar_nacimiento"),
+      ingreso_mensual: val("ingreso_mensual").replace(/\D/g, "") || null,
       profesion_oficio: val("profesion_oficio"),
       genero: radioVal("genero"),
       ciudad: val("ciudad"),

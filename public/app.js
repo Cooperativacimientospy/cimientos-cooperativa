@@ -74,10 +74,15 @@
   let perfilActual = null;
   window.cimientosData = {
     solicitudes: () => solicitudes,
-    preregistros: () => leads
+    preregistros: () => leads,
+    refresh: () => cargarDesdeSupabase(),
+    role: () => rolActual(),
+    readAll: (table) => readAllRemote(table),
+    modal: (title,body) => modal(title,body),
+    closeModal: () => closeModal()
   };
-  function rolActual() { return perfilActual ? perfilActual.rol : "superadministrador"; }
-  function puedeGestionar() { return rolActual() !== "lectura"; }
+  function rolActual() { return perfilActual ? perfilActual.rol : (cloudConfigured ? "lectura" : "superadministrador"); }
+  function puedeGestionar() { return !["lectura", "auditoria"].includes(rolActual()); }
   function esSuperadmin() { return rolActual() === "superadministrador"; }
 
   // ---------------- Supabase (opcional) ----------------
@@ -113,8 +118,8 @@
     if (!supabaseClient) return;
     try {
       const [sol, lea, act] = await Promise.all([
-        supabaseClient.from(TABLES.solicitudes).select("*").order("created_at", { ascending: false }),
-        supabaseClient.from(TABLES.leads).select("*").order("created_at", { ascending: false }),
+        readAllRemote(TABLES.solicitudes),
+        readAllRemote(TABLES.leads),
         supabaseClient.from(TABLES.actividad).select("*").order("fecha", { ascending: false }).limit(100),
       ]);
       if (!sol.error && Array.isArray(sol.data)) { solicitudes = sol.data; write(KEYS.solicitudes, solicitudes); }
@@ -125,6 +130,17 @@
       if (act.error) console.error("Supabase (actividad):", act.error.message);
       renderAll();
     } catch (err) { console.error("Supabase (carga inicial):", err); }
+  }
+
+  async function readAllRemote(table) {
+    if (!supabaseClient) return {data:[],error:null};
+    const rows=[];
+    for(let offset=0;;offset+=1000) {
+      const result=await supabaseClient.from(table).select("*").order("id",{ascending:true}).range(offset,offset+999);
+      if(result.error)return {data:null,error:result.error};
+      rows.push(...(result.data||[]));
+      if((result.data||[]).length<1000)return {data:rows,error:null};
+    }
   }
 
   async function cargarConfigInstitucional() {
@@ -375,7 +391,7 @@
     const beneficiaries = Array.isArray(r.beneficiarios) && r.beneficiarios.length ? r.beneficiarios.map((b) => `${b.nombre} (${b.parentesco || "—"}, ${b.porcentaje || 0}%)`).join(" · ") : "Sin beneficiarios";
     if (tipoSocio(r) === "fundador") {
       const pendiente = !!r.datos_pendiente_revision;
-      modal(`Socio Fundador N.º ${r.numero_socio || "—"}${pendiente ? " · Pendiente de revisión" : ""}`, `${photoPickerHtml(r)}<div class="detailgrid">${detail("Nombre", nombre(r))}${detail("Cédula", r.cedula)}${detail("Nacimiento", fmtDate(r.fecha_nacimiento))}${detail("Celular", tel(r))}${detail("Correo", r.correo_electronico)}${detail("Ciudad", [r.ciudad, r.barrio].filter(Boolean).join(", "))}${detail("Dirección", r.direccion)}${detail("Actividad", r.condicion_laboral)}${detail("Origen de fondos", r.origen_fondos)}${detail("Certificados suscritos", (r.certificados_suscritos || 100) + " × Gs. 30.000")}${detail("Capital integrado (60%)", fmtGs(r.capital_integrado || Math.round((r.capital_suscrito || 3000000) * 0.6)))}${detail("Fecha de constitución", fmtDate(r.fecha_constitucion || FECHA_CONSTITUCION))}${detail("Beneficiarios", beneficiaries)}</div>${pendiente ? '<p style="color:var(--orange);font-size:12px;font-weight:700">Estos datos los completó el propio socio por el link público. Revisalos y confirmá el número de socio y el capital fundacional.</p>' : ""}<div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;margin-top:16px">${tel(r) ? '<button class="btn btn-whatsapp" id="reqWhatsApp">WhatsApp</button>' : ""}<button class="btn btn-secondary" id="reqPrint">Imprimir ficha</button><button class="btn btn-primary" id="reqReview">${pendiente ? "Revisar y confirmar datos" : "Editar datos"}</button></div>`);
+      modal(`Socio Fundador N.º ${r.numero_socio || "—"}${pendiente ? " · Pendiente de revisión" : ""}`, `${photoPickerHtml(r)}<div class="detailgrid">${detail("Nombre", nombre(r))}${detail("Cédula", r.cedula)}${detail("Nacimiento", fmtDate(r.fecha_nacimiento))}${detail("Celular", tel(r))}${detail("Correo", r.correo_electronico)}${detail("Ciudad", [r.ciudad, r.barrio].filter(Boolean).join(", "))}${detail("Dirección", r.direccion)}${detail("Actividad", r.condicion_laboral)}${detail("Origen de fondos", r.origen_fondos)}${detail("Certificados suscritos", (r.certificados_suscritos || 100) + " × Gs. 30.000")}${detail("Capital integrado (60%)", fmtGs(r.capital_integrado || Math.round((r.capital_suscrito || 3000000) * 0.6)))}${detail("Fecha de constitución", fmtDate(r.fecha_constitucion || FECHA_CONSTITUCION))}${detail("Beneficiarios", beneficiaries)}</div>${pendiente ? '<p style="color:var(--orange);font-size:12px;font-weight:700">Estos datos los completó el propio socio por el link público. Revisalos y confirmá el número de socio y el capital fundacional.</p>' : ""}<div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;margin-top:16px">${tel(r) ? '<button class="btn btn-whatsapp" id="reqWhatsApp" title="Guardá el PDF y adjuntalo en el chat">Abrir WhatsApp Web</button>' : ""}<button class="btn btn-secondary" id="reqPrint">Imprimir ficha</button><button class="btn btn-primary" id="reqReview">${pendiente ? "Revisar y confirmar datos" : "Editar datos"}</button></div>`);
       wirePhotoPicker(r);
       if (tel(r)) $("#reqWhatsApp").onclick = () => shareMemberWhatsApp(r);
       $("#reqPrint").onclick = () => printRequest(r);
@@ -388,7 +404,7 @@
       return;
     }
     if (r.estado === "aprobado") {
-      modal(`Socio N.º ${r.numero_socio || "—"}`, `${photoPickerHtml(r)}<div class="detailgrid">${detail("Nombre", nombre(r))}${detail("Cédula", r.cedula)}${detail("Nacimiento", fmtDate(r.fecha_nacimiento))}${detail("Celular", tel(r))}${detail("Correo", r.correo_electronico)}${detail("Ciudad", [r.ciudad, r.departamento].filter(Boolean).join(", "))}${detail("Dirección", r.direccion)}${detail("Actividad", r.condicion_laboral)}${detail("Origen de fondos", r.origen_fondos)}${detail("N.º de resolución", r.resolucion_numero)}${detail("Fecha de admisión", fmtDate(r.fecha_revision))}${detail("Beneficiarios", beneficiaries)}</div><div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;margin-top:16px">${tel(r) ? '<button class="btn btn-whatsapp" id="reqWhatsApp">WhatsApp</button>' : ""}<button class="btn btn-secondary" id="reqContributions">Ver aportes</button><button class="btn btn-primary" id="reqPrint">Abrir carpeta del socio</button></div>`);
+      modal(`Socio N.º ${r.numero_socio || "—"}`, `${photoPickerHtml(r)}<div class="detailgrid">${detail("Nombre", nombre(r))}${detail("Cédula", r.cedula)}${detail("Nacimiento", fmtDate(r.fecha_nacimiento))}${detail("Celular", tel(r))}${detail("Correo", r.correo_electronico)}${detail("Ciudad", [r.ciudad, r.departamento].filter(Boolean).join(", "))}${detail("Dirección", r.direccion)}${detail("Actividad", r.condicion_laboral)}${detail("Origen de fondos", r.origen_fondos)}${detail("N.º de resolución", r.resolucion_numero)}${detail("Fecha de admisión", fmtDate(r.fecha_revision))}${detail("Beneficiarios", beneficiaries)}</div><div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;margin-top:16px">${tel(r) ? '<button class="btn btn-whatsapp" id="reqWhatsApp" title="Guardá el PDF y adjuntalo en el chat">Abrir WhatsApp Web</button>' : ""}<button class="btn btn-secondary" id="reqContributions">Ver aportes</button><button class="btn btn-primary" id="reqPrint">Abrir carpeta del socio</button></div>`);
       wirePhotoPicker(r);
       if (tel(r)) $("#reqWhatsApp").onclick = () => shareMemberWhatsApp(r);
       $("#reqPrint").onclick = () => printRequest(r);
@@ -396,7 +412,7 @@
       return;
     }
     const canDeleteRequest = !supabaseClient || (perfilActual && ["superadministrador", "admision"].includes(perfilActual.rol));
-    modal(`Solicitud #${r.numero_solicitud || "—"}`, `${photoPickerHtml(r)}<div class="detailgrid">${detail("Solicitante", nombre(r))}${detail("Cédula", r.cedula)}${detail("Nacimiento", fmtDate(r.fecha_nacimiento))}${detail("Celular", tel(r))}${detail("Contacto preferido", r.contacto_preferido)}${detail("Ciudad", [r.ciudad, r.departamento].filter(Boolean).join(", "))}${detail("Dirección", r.direccion)}${detail("Vivienda", r.tipo_vivienda)}${detail("Actividad", r.condicion_laboral)}${detail("Empresa / RUC", r.empresa_ruc)}${detail("Cargo", r.cargo_laboral)}${detail("Antigüedad laboral", r.antiguedad_laboral)}${detail("Dirección laboral", r.direccion_laboral)}${detail("Cargo público/político", r.cargo_publico)}${detail("Trabajo en ONG", r.trabajo_ong)}${detail("Origen de fondos", r.origen_fondos)}${detail("Referente", r.referente_nombre)}${detail("Forma de pago", r.forma_pago)}${detail("Derecho de admisión", fmtGs(r.derecho_admision || 150000))}${detail("Beneficiarios", beneficiaries)}</div><div class="formfield"><label>Notas administrativas</label><textarea id="requestNotes" rows="3" style="width:100%;border:1px solid var(--line);border-radius:12px;padding:10px">${esc(r.notas_admin || "")}</textarea></div><div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;margin-top:16px">${canDeleteRequest ? '<button class="btn" style="background:var(--danger);color:white;margin-right:auto" id="reqDelete">Eliminar solicitud</button>' : ""}<button class="btn btn-whatsapp" id="reqWhatsApp">WhatsApp</button><button class="btn btn-secondary" id="reqPrint">Imprimir ficha</button><button class="btn btn-secondary" id="reqObserve">Observar</button><button class="btn" style="background:var(--danger);color:white" id="reqReject">Rechazar</button><button class="btn btn-primary" id="reqApprove">Aprobar</button></div>`);
+    modal(`Solicitud #${r.numero_solicitud || "—"}`, `${photoPickerHtml(r)}<div class="detailgrid">${detail("Solicitante", nombre(r))}${detail("Cédula", r.cedula)}${detail("Nacimiento", fmtDate(r.fecha_nacimiento))}${detail("Celular", tel(r))}${detail("Contacto preferido", r.contacto_preferido)}${detail("Ciudad", [r.ciudad, r.departamento].filter(Boolean).join(", "))}${detail("Dirección", r.direccion)}${detail("Vivienda", r.tipo_vivienda)}${detail("Actividad", r.condicion_laboral)}${detail("Empresa / RUC", r.empresa_ruc)}${detail("Cargo", r.cargo_laboral)}${detail("Antigüedad laboral", r.antiguedad_laboral)}${detail("Dirección laboral", r.direccion_laboral)}${detail("Cargo público/político", r.cargo_publico)}${detail("Trabajo en ONG", r.trabajo_ong)}${detail("Origen de fondos", r.origen_fondos)}${detail("Referente", r.referente_nombre)}${detail("Forma de pago", r.forma_pago)}${detail("Derecho de admisión", fmtGs(r.derecho_admision || 150000))}${detail("Beneficiarios", beneficiaries)}</div><div class="formfield"><label>Notas administrativas</label><textarea id="requestNotes" rows="3" style="width:100%;border:1px solid var(--line);border-radius:12px;padding:10px">${esc(r.notas_admin || "")}</textarea></div><div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;margin-top:16px">${canDeleteRequest ? '<button class="btn" style="background:var(--danger);color:white;margin-right:auto" id="reqDelete">Eliminar solicitud</button>' : ""}<button class="btn btn-whatsapp" id="reqWhatsApp" title="Guardá el PDF y adjuntalo en el chat">Abrir WhatsApp Web</button><button class="btn btn-secondary" id="reqPrint">Imprimir ficha</button><button class="btn btn-secondary" id="reqObserve">Observar</button><button class="btn" style="background:var(--danger);color:white" id="reqReject">Rechazar</button><button class="btn btn-primary" id="reqApprove">Aprobar</button></div>`);
     wirePhotoPicker(r);
     $("#reqWhatsApp").onclick = () => shareMemberWhatsApp(r);
     $("#reqPrint").onclick = () => printRequest(r);
@@ -512,7 +528,7 @@
     const numeroSocio = r.numero_socio || "—";
     const numeroSolicitud = "0001-" + String(r.numero_solicitud || 0).padStart(4, "0");
     const docCode = "FIC-" + (r.numero_socio || "SOL" + String(r.numero_solicitud || 0).padStart(4, "0"));
-    const printLogo = new URL("assets/logo-cimientos.png", location.href).href;
+    const printLogo = window.cimientosIdentity?.get().logo || new URL("assets/logo-cimientos.png", location.href).href;
 
     const watermark = admitted ? "" : `<div class="watermark">${r.estado === "rechazado" ? "SOLICITUD RECHAZADA" : "EN REVISIÓN"}</div>`;
 
@@ -549,6 +565,7 @@
         <section><h2>Datos personales</h2><div class="grid">
           ${field("Cédula de identidad", r.cedula)}${field("Nacionalidad", r.nacionalidad)}
           ${field("Fecha de nacimiento", fmtDate(r.fecha_nacimiento))}${field("Estado civil", r.estado_civil)}
+          ${field("Lugar de nacimiento", r.lugar_nacimiento)}${field("Ingreso mensual aproximado", r.ingreso_mensual == null ? "—" : fmtGs(r.ingreso_mensual))}
           ${field("Profesión / oficio", r.profesion_oficio)}${field("Género", r.genero)}
         </div></section>
         <section><h2>Domicilio y contacto</h2><div class="grid">
@@ -709,22 +726,43 @@
       </style></head>
       <body>${ficha}${receipt}${resolution}${constancia}
       <div class="hint">Antes de imprimir: en el diálogo de impresión desactivá "Encabezados y pies de página" para que no aparezcan la URL y la fecha del navegador.</div>
-      <div class="actions">${phone ? `<button class="whatsapp" onclick="this.disabled=true;open('https://web.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(waMessage)}','_blank','noopener,noreferrer');setTimeout(()=>this.disabled=false,1500)">WhatsApp</button>` : ""}<button class="close" onclick="close()">Cerrar</button><button class="print" onclick="print()">Imprimir / Guardar PDF</button></div>
+      <div class="actions"><small>Para WhatsApp: guardá el PDF y adjuntalo en el chat.</small>${phone ? `<button class="whatsapp" onclick="this.disabled=true;open('https://web.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(waMessage)}','_blank','noopener,noreferrer');setTimeout(()=>this.disabled=false,1500)" title="Guardá el PDF y adjuntalo en el chat">Abrir WhatsApp Web</button>` : ""}<button class="close" onclick="close()">Cerrar</button><button class="print" onclick="print()">Imprimir / Guardar PDF</button></div>
       </body></html>`;
   }
 
   function renderLeads() {
+    let bulk = $("#bulkDeleteLeads");
+    if (!bulk) { const add = $("#newLeadBtn"), actions = document.createElement("div"); actions.className = "pagehead-actions"; add.before(actions); actions.append(add); bulk = document.createElement("button"); bulk.id = "bulkDeleteLeads"; bulk.className = "btn btn-secondary"; bulk.textContent = "Eliminar…"; add.before(bulk); }
+    bulk.hidden = !["superadministrador", "admision", "secretaria", "atencion", "consejo"].includes(rolActual());
+    bulk.onclick = () => bulkDeleteLeads(leads);
     $("#leadsBody").innerHTML = leads.map((r) => `<tr><td><strong>${esc(r.nombre_contacto)}</strong></td><td>${esc(r.celular_whatsapp)}</td><td>${esc(r.origen || "Otro")}</td><td>${fmtDate(r.created_at)}</td><td>${badge(leadEstadoEfectivo(r))}</td><td><button class="linkbtn" data-lead="${esc(r.id)}">Gestionar</button></td></tr>`).join("") || '<tr><td colspan="6" class="empty">No hay pre-registros. Creá el primero cuando recibas una consulta.</td></tr>';
     $$('[data-lead]').forEach((b) => b.onclick = () => openLead(b.dataset.lead));
+  }
+  function bulkDeleteLeads(rows) {
+    const eligible = rows.filter(r => !r.solicitud_id && !["completado", "iniciado"].includes(r.estado));
+    modal("Eliminar pre-registros", `<p>Seleccioná los registros que ya no necesitás. Los que tienen trámites vinculados se conservan. Esta acción no elimina socios.</p><form id="bulkLeadForm"><label><input id="bulkLeadAll" type="checkbox"> Seleccionar todos los disponibles</label><div style="max-height:320px;overflow:auto;margin:16px 0">${eligible.map(r => `<label class="item"><input type="checkbox" name="selected" value="${esc(r.id)}"><span>${esc(r.nombre_contacto)} · ${esc(r.celular_whatsapp)}</span></label>`).join("") || '<p>No hay registros disponibles para eliminar.</p>'}</div><div class="formfield"><label for="bulkLeadReason">Motivo</label><input id="bulkLeadReason" required minlength="5" maxlength="500"></div><p role="status" id="bulkLeadStatus"></p><button class="btn btn-secondary" type="button" id="bulkLeadCancel">Cancelar</button> <button class="btn btn-primary" type="submit" ${eligible.length ? "" : "disabled"}>Eliminar seleccionados</button></form>`);
+    $("#bulkLeadCancel").onclick = closeModal;
+    $("#bulkLeadAll").onchange = e => $$('#bulkLeadForm [name="selected"]').forEach(x => x.checked = e.target.checked);
+    $("#bulkLeadForm").onsubmit = async e => {
+      e.preventDefault(); const ids = new FormData(e.target).getAll("selected");
+      if (!ids.length) { $("#bulkLeadStatus").textContent = "Seleccioná al menos un registro."; return; }
+      if (ids.length > 500) { $("#bulkLeadStatus").textContent = "Seleccioná hasta 500 registros por operación."; return; }
+      if (!confirm(`¿Eliminar ${ids.length} pre-registro(s)? No se puede deshacer.`)) return;
+      e.submitter.disabled = true;
+      try {
+        if (supabaseClient) { const { data, error } = await supabaseClient.rpc("fn_eliminar_lote", {p_tipo:"preregistros",p_ids:ids,p_motivo:$("#bulkLeadReason").value.trim()}); if (error) throw error; if (data !== ids.length) throw Error("La lista cambió. Recargá antes de continuar."); }
+        leads = leads.filter(r => !ids.includes(String(r.id))); saveLeads(); closeModal(); renderAll(); toast(`${ids.length} pre-registro(s) eliminados`);
+      } catch (err) { $("#bulkLeadStatus").textContent = friendlyError(err,"No se pudo completar la eliminación"); e.submitter.disabled = false; }
+    };
   }
   function openLead(id) { const r = leads.find((x) => String(x.id) === String(id)); if (!r) return; leadModal(r); }
   function leadModal(r) {
     const isNew = !r;
-    modal(isNew ? "Nuevo pre-registro" : "Gestionar pre-registro", `<div class="formgrid"><div class="formfield"><label>Nombre y apellido</label><input id="leadName" value="${esc(r?.nombre_contacto || "")}"></div><div class="formfield"><label>Celular / WhatsApp</label><input id="leadPhone" value="${esc(r?.celular_whatsapp || "")}"></div><div class="formfield"><label>Origen</label><select id="leadOrigin"><option>Presencial</option><option>WhatsApp</option><option>Llamada</option><option>Referido</option><option>Otro</option></select></div><div class="formfield"><label>Estado${isNew ? "" : ` <span style="font-weight:400;text-transform:none;letter-spacing:0">— actual: ${badge(leadEstadoEfectivo(r))}</span>`}</label><select id="leadStatus"><option value="pendiente">Pendiente</option><option value="preparado">Link preparado</option><option value="copiado">Link copiado</option><option value="enviado">Enviado por WhatsApp</option><option value="iniciado">Formulario iniciado</option><option value="completado">Completado</option><option value="vencido">Token vencido</option><option value="revocado">Revocado</option><option value="descartado">Descartado</option></select></div></div><div class="formfield" style="margin-top:12px"><label>Notas</label><textarea id="leadNotes" rows="3" style="width:100%;border:1px solid var(--line);border-radius:12px;padding:10px">${esc(r?.notas || "")}</textarea></div><div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:16px">${isNew ? "" : '<button class="btn" style="background:var(--danger);color:white" id="leadDelete">Eliminar</button>' + (r.token && !["completado", "descartado", "revocado"].includes(r.estado) ? '<button class="btn btn-secondary" id="leadRevoke" style="color:var(--danger)">Revocar link</button>' : "") + '<button class="btn btn-secondary" id="leadCopyLink">Copiar link</button><button class="btn btn-secondary" id="leadWhatsApp">Preparar WhatsApp</button>'}<button class="btn btn-primary" id="leadSave">Guardar</button></div>`);
+    modal(isNew ? "Nuevo pre-registro" : "Gestionar pre-registro", `<div class="formgrid"><div class="formfield"><label>Nombre y apellido</label><input id="leadName" value="${esc(r?.nombre_contacto || "")}"></div><div class="formfield"><label>Celular / WhatsApp</label><input id="leadPhone" value="${esc(r?.celular_whatsapp || "")}"></div><div class="formfield"><label>Origen</label><select id="leadOrigin"><option>Presencial</option><option>WhatsApp</option><option>Llamada</option><option>Referido</option><option>Otro</option></select></div><div class="formfield"><label>Estado${isNew ? "" : ` <span style="font-weight:400;text-transform:none;letter-spacing:0">— actual: ${badge(leadEstadoEfectivo(r))}</span>`}</label><select id="leadStatus"><option value="pendiente">Pendiente</option><option value="preparado">Link preparado</option><option value="copiado">Link copiado</option><option value="enviado">Enviado por WhatsApp</option><option value="iniciado">Formulario iniciado</option><option value="completado">Completado</option><option value="vencido">Token vencido</option><option value="revocado">Revocado</option><option value="descartado">Descartado</option></select></div></div><div class="formfield" style="margin-top:12px"><label>Notas</label><textarea id="leadNotes" rows="3" style="width:100%;border:1px solid var(--line);border-radius:12px;padding:10px">${esc(r?.notas || "")}</textarea></div><div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:16px">${isNew ? "" : '<button class="btn" style="background:var(--danger);color:white" id="leadDelete">Eliminar</button>' + (r.token && !["completado", "descartado", "revocado"].includes(r.estado) ? '<button class="btn btn-secondary" id="leadRevoke" style="color:var(--danger)">Revocar link</button>' : "") + '<button class="btn btn-secondary" id="leadCopyLink">Copiar link</button><button class="btn btn-secondary" id="leadWhatsApp" title="Abrir el chat; el PDF se adjunta manualmente">Abrir WhatsApp Web</button>'}<button class="btn btn-primary" id="leadSave">Guardar</button></div>`);
     $("#leadOrigin").value = r?.origen || "Presencial"; $("#leadStatus").value = r?.estado || "pendiente";
     $("#leadSave").onclick = () => { const name = $("#leadName").value.trim(), phone = $("#leadPhone").value.trim(); if (!name || !phone) return toast("Completá nombre y celular"); if (isNew) { r = { id: "lead-" + Date.now(), created_at: now() }; leads.unshift(r); } Object.assign(r, { nombre_contacto: name, celular_whatsapp: phone, origen: $("#leadOrigin").value, estado: $("#leadStatus").value, notas: $("#leadNotes").value.trim(), creado_por: config.administrador }); saveLeads(r); log(`${config.administrador} ${isNew ? "creó" : "actualizó"} el pre-registro de ${name}`); closeModal(); renderAll(); toast("Pre-registro guardado"); };
     if (!isNew) {
-      $("#leadDelete").onclick = () => { if (!confirm("¿Eliminar este pre-registro?")) return; deleteRemote(TABLES.leads, r.id); leads = leads.filter((x) => x !== r); saveLeads(); log(`${config.administrador} eliminó el pre-registro de ${r.nombre_contacto}`); closeModal(); renderAll(); };
+      $("#leadDelete").onclick = () => bulkDeleteLeads([r]);
       if ($("#leadRevoke")) $("#leadRevoke").onclick = busyClick($("#leadRevoke"), () => revocarToken(r));
       // El link nunca lleva nombre ni celular en la URL: se genera un
       // token opaco y temporal en el servidor (fn_generar_token_preregistro)
@@ -771,7 +809,7 @@
         r = leads.find((x) => String(x.id) === String(r.id)) || r;
         const msg = (config.mensajeInvitacion || "Hola {nombre}, te compartimos el formulario de admisión: {link}").replaceAll("{nombre}", r.nombre_contacto).replaceAll("{link}", link);
         if (!abrirWhatsApp(r.celular_whatsapp, msg)) return;
-        avanzarEstadoLead(r, "enviado"); saveLeads(r);
+        avanzarEstadoLead(r, "preparado"); saveLeads(r);
         closeModal(); renderAll();
       });
     }
@@ -866,11 +904,11 @@
         if (Number.isFinite(numeroA) !== Number.isFinite(numeroB)) return Number.isFinite(numeroA) ? -1 : 1;
         return nombre(a).localeCompare(nombre(b), "es", { sensitivity: "base" });
       });
-    $("#membersBody").innerHTML = rows.map((r) => `<tr><td><strong>${esc(r.numero_socio || "s/n")}</strong></td><td><strong>${esc(nombre(r))}</strong>${tipoSocio(r) === "fundador" ? ' <span style="color:var(--green);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em">· Fundador</span>' : ""}</td><td>${esc(r.cedula || "—")}</td><td>${fmtDate(r.fecha_revision || r.created_at)}</td><td>${r.datos_pendiente_revision ? '<span class="badge pendiente">Por revisar</span>' : badge("activo")}</td><td><button class="linkbtn" data-member="${esc(r.id)}">Abrir ficha</button></td></tr>`).join("") || '<tr><td colspan="6" class="empty">Todavía no hay socios aprobados.</td></tr>';
+    $("#membersBody").innerHTML = rows.map((r) => `<tr><td><strong>${esc(r.numero_socio || "s/n")}</strong></td><td><strong>${esc(nombre(r))}</strong>${tipoSocio(r) === "fundador" ? ' <span style="color:var(--green);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em">· Fundador</span>' : ""}</td><td>${esc(r.cedula || "—")}</td><td>${fmtDate(r.fecha_ingreso || r.fecha_revision)}</td><td>${r.datos_pendiente_revision ? '<span class="badge pendiente">Por revisar</span>' : badge(r.estado_societario || "activo")}</td><td><button class="linkbtn" data-member="${esc(r.id)}">Abrir ficha</button> <button class="linkbtn" data-member-status="${esc(r.id)}">Estado y baja</button></td></tr>`).join("") || '<tr><td colspan="6" class="empty">Todavía no hay socios aprobados.</td></tr>';
     $$('[data-member]').forEach((b) => b.onclick = () => openRequest(b.dataset.member));
   }
   function renderActivity() { $("#activityList").innerHTML = actividad.map((a) => `<div class="item"><span class="dot" style="background:var(--green)"></span><div class="item-main"><strong>${esc(a.texto)}</strong><small>${fmtDate(a.fecha)} · ${esc(a.usuario || "Administrador")}</small></div></div>`).join("") || '<div class="empty">Todavía no hay actividad registrada.</div>'; }
-  function renderAll() { solicitudes = read(KEYS.solicitudes, solicitudes); leads = read(KEYS.leads, leads); renderHome(); renderRequests(); renderLeads(); renderMembers(); renderActivity(); }
+  function renderAll() { if (!cloudConfigured) { solicitudes = read(KEYS.solicitudes, solicitudes); leads = read(KEYS.leads, leads); } renderHome(); renderRequests(); renderLeads(); renderMembers(); renderActivity(); }
 
   function applyTheme(t) { document.documentElement.style.setProperty("--green", t.green); document.documentElement.style.setProperty("--orange", t.orange); document.documentElement.style.setProperty("--bg", t.bg); $("#greenColor").value = t.green; $("#orangeColor").value = t.orange; $("#bgColor").value = t.bg; }
   function augmentSettings() {
@@ -882,6 +920,7 @@
   function renderSetting(name) {
     const p = $(".settings-panel"), head = (t, d) => `<h2>${t}</h2><p>${d}</p>`;
     if (name === "identidad") {
+      if (window.cimientosIdentity) { window.cimientosIdentity.render(p, esSuperadmin()); return; }
       const t = Object.assign({}, DEFAULTS, read(KEYS.theme, {})); p.innerHTML = head("Identidad visual", "Colores e identidad de la cooperativa.") + `<div class="colorrow"><div class="colorbox"><label>Principal</label><input type="color" id="greenColor" value="${t.green}"></div><div class="colorbox"><label>Acento</label><input type="color" id="orangeColor" value="${t.orange}"></div><div class="colorbox"><label>Fondo</label><input type="color" id="bgColor" value="${t.bg}"></div></div><button class="btn btn-primary" id="saveTheme" style="margin-top:16px">Guardar apariencia</button>`; ["green","orange","bg"].forEach(k => $("#"+k+"Color").oninput=e=>document.documentElement.style.setProperty("--"+k,e.target.value)); $("#saveTheme").onclick=()=>{const v={green:$("#greenColor").value,orange:$("#orangeColor").value,bg:$("#bgColor").value};write(KEYS.theme,v);applyTheme(v);toast("Apariencia guardada")}; return;
     }
     if (name === "funcionarios") {
@@ -966,6 +1005,10 @@
       p.innerHTML=head("Seguridad","Protección local mientras no exista autenticación.")+`<div class="formgrid"><div class="formfield"><label>PIN de 4 a 6 números</label><input id="pin" type="password" maxlength="6" value="${esc(config.pin||"")}"></div><div class="formfield"><label>Confirmar eliminaciones</label><select id="confirmDelete"><option value="1">Sí</option><option value="0">No</option></select></div></div><button class="btn btn-primary" id="saveSecurity" style="margin-top:14px">Guardar</button>`;$("#saveSecurity").onclick=()=>{const v=$("#pin").value;if(v&&!/^\d{4,6}$/.test(v))return toast("PIN inválido");config.pin=v;config.confirmarBorrado=$("#confirmDelete").value==="1";write(KEYS.config,config);toast("Seguridad guardada")};return; }
     if (name === "respaldo") {
       const cloud = !!supabaseClient;
+      if (cloud) {
+        p.innerHTML = head("Respaldo y conservación", "En producción no se permite borrar todos los datos ni reiniciar las numeraciones. Los pagos se anulan y los socios conservan su matrícula histórica.") + '<p>Los respaldos completos deben incluir base de datos y archivos adjuntos. La exportación del padrón está disponible en Libro de Socios; no reemplaza un respaldo completo.</p>';
+        return;
+      }
       const canClear = !cloud || esSuperadmin();
       p.innerHTML = head("Respaldo", cloud ? "Descargá un respaldo o limpiá los datos operativos del sistema." : "Descargá, restaurá o limpiá la base local.") + `<p><strong>${solicitudes.length}</strong> solicitudes · <strong>${leads.length}</strong> pre-registros</p><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-primary" id="backupBtn">Descargar</button><label class="btn btn-secondary">Importar<input id="restoreInput" type="file" accept="application/json" hidden></label>${canClear ? '<button class="btn" style="background:var(--danger);color:white" id="clearData">Borrar todos los datos</button>' : ""}</div>${cloud ? '<p class="muted" style="margin-top:12px">El borrado conserva los usuarios y la configuración institucional para que el panel siga siendo accesible.</p>' : ""}`;
       $("#backupBtn").onclick = () => { const a = document.createElement("a"), blob = new Blob([JSON.stringify({ app: "Cimientos Beta Local", solicitudes, leads, actividad, config }, null, 2)], { type: "application/json" }); a.href = URL.createObjectURL(blob); a.download = "respaldo-cimientos.json"; a.click(); };
@@ -1113,7 +1156,8 @@
     decorateIcons(); updateProfileUI(); augmentSettings(); renderAll();
     // Si Supabase está configurado, lo local se ve primero (instantáneo)
     // y se actualiza apenas llega la respuesta del servidor.
-    cargarDesdeSupabase();
+    await cargarDesdeSupabase();
+    if (window.cimientosOperations) await window.cimientosOperations.refresh();
     if (new URLSearchParams(location.search).get("invite") === "1") {
       setTimeout(() => {
         modal("Crear tu contraseña", `<p style="color:var(--muted);font-size:12px">Tu invitación fue aceptada. Elegí una contraseña de al menos 8 caracteres para ingresar al panel.</p><div class="formfield"><label>Nueva contraseña</label><input id="invitePassword" type="password" minlength="8" autocomplete="new-password"></div><div style="display:flex;justify-content:flex-end;margin-top:16px"><button class="btn btn-primary" id="saveInvitePassword">Guardar contraseña</button></div>`);
