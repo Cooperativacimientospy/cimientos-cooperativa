@@ -4,8 +4,7 @@
 
 update public.perfiles_admin
 set rol = 'superadministrador', updated_at = now()
-where activo is distinct from false
-  and rol <> 'superadministrador';
+where rol <> 'superadministrador';
 
 create or replace function public.fn_forzar_acceso_uniforme()
 returns trigger
