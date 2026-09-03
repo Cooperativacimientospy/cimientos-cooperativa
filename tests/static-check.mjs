@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { Script } from 'node:vm';
 import assert from 'node:assert/strict';
-for (const file of ['app.js','app-operaciones.js','identity.js','societario.js']) {
+for (const file of ['app.js','app-operaciones.js','identity.js','societario.js','theme.js','invitation.js']) {
   new Script(readFileSync(new URL(`../public/${file}`,import.meta.url),'utf8'),{filename:file});
 }
 for (const file of ['panel.html','formulario.html']) {

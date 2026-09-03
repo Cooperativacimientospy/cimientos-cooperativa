@@ -378,3 +378,64 @@ textarea:focus {
 .staff-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
 .staff-actions select{min-width:170px}
 @media(max-width:720px){.profile-grid{grid-template-columns:1fr}.staff-actions{width:100%;justify-content:stretch}.staff-actions select,.staff-actions button{flex:1}}
+
+/* Dark appearance: scoped to the panel; printed documents and iframe pages
+   retain their own white paper styles. Layout and light palette are unchanged. */
+html[data-theme="dark"] {
+  color-scheme: dark;
+  /* Important only for tokens that the appearance editor sets inline. */
+  --bg: #171918 !important;
+  --green: #a6d568 !important;
+  --orange: #ffb567 !important;
+  --ink: #f1f3ef;
+  --muted: #b2b9b2;
+  --card: #232723;
+  --sidebar: #1c201d;
+  --surface-raised: #2d332e;
+  --fill: #2d332e;
+  --fill-hover: #363e37;
+  --soft: #2d332e;
+  --line: #3b443c;
+  --line-strong: #59655a;
+  --danger: #ffab9f;
+  --ios-tint: var(--green);
+  --shadow: 0 24px 70px rgba(0,0,0,.28);
+}
+html[data-theme="dark"] body { background: var(--bg); }
+html[data-theme="dark"] :is(.card,.modal,.overlaywin,.colorbox,.detail) {
+  background: var(--card); color: var(--ink); border-color: var(--line);
+}
+html[data-theme="dark"] :is(.profile,.icon-btn,.btn-secondary,.quick button,.op-member-result,.overlaywin-head,.mobilebar,.segmented button.active,.nav button.active,.mobilebar button.active) {
+  background: var(--surface-raised); color: var(--ink); border-color: var(--line);
+}
+html[data-theme="dark"] :is(.profile:hover,.icon-btn:hover,.quick button:hover,.op-member-result:hover) { background: var(--fill-hover); }
+html[data-theme="dark"] :is(.nav button.active,.nav button.active .ico,.nav button:hover .ico,.mobilebar button.active,.mobile-op-nav button.active) { color: var(--green); }
+html[data-theme="dark"] :is(.nav .ico,.nav button[data-go] .ico) { color: var(--muted); }
+html[data-theme="dark"] :is(.kpi,.settings-nav button,.profile-action) { color: var(--ink); }
+html[data-theme="dark"] :is(.hero,.item,.op-row,.op-report-grid>div,.op-notice,.mobile-op-nav button.active) {
+  background: var(--fill); border-color: var(--line); box-shadow: none;
+}
+html[data-theme="dark"] .hero { background: linear-gradient(135deg,#293524,var(--card)); }
+html[data-theme="dark"] .op-row:hover { background: var(--fill-hover); }
+html[data-theme="dark"] :is(.op-form input,.op-form select,.op-form textarea,.op-account-head select) {
+  color: var(--ink); background: var(--fill); border-color: var(--line);
+}
+html[data-theme="dark"] :is(.search input,.field,.formfield input,.formfield select,.formfield textarea,textarea) { box-shadow: none; }
+html[data-theme="dark"] :is(input,select,textarea):focus { background: var(--surface-raised); color: var(--ink); }
+html[data-theme="dark"] :is(input,textarea)::placeholder { color: var(--muted); opacity: 1; }
+html[data-theme="dark"] :is(button,a,input,select,textarea):focus-visible { outline-color: var(--green); }
+html[data-theme="dark"] .btn-primary { background: #a6d568; color: #17220e; box-shadow: none; }
+html[data-theme="dark"] .btn-whatsapp { background: #19874b !important; color: #fff !important; }
+html[data-theme="dark"] :is(.aprobado,.activo,.enviado,.op-month.paid) { background: #293d2a; color: #b5e69b; border-color: #476443; }
+html[data-theme="dark"] :is(.pendiente,.vencido,.op-month.pending) { background: #403323; color: #ffd093; }
+html[data-theme="dark"] .observada { background: #373044; color: #d8baff; }
+html[data-theme="dark"] .rechazado { background: #462c28; color: #ffc1b7; }
+html[data-theme="dark"] :is(.copiado,.revocado) { background: #333a35; color: #d0d8d1; }
+html[data-theme="dark"] .profile-avatar-large { background: #314229; }
+html[data-theme="dark"] .brandmark { background: #f3f4f1; border-radius: 10px; padding: 3px; }
+html[data-theme="dark"] #loginScreen { background: var(--bg) !important; }
+#loginScreen { overflow-y: auto; }
+#passwordSetupForm h2 { font-size: 21px; }
+#passwordSetupForm p { font-size: 12px; line-height: 1.5; }
+#passwordSetupForm a { color: var(--green); }
+#passwordSetupForm #setupError { color: var(--danger); }

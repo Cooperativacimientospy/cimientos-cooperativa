@@ -65,7 +65,6 @@
   let config = Object.assign({}, DEFAULTS, read(KEYS.config, {}));
   let filter = "todos";
   let memberFilter = "todos";
-  let dark = false;
   // Configuración institucional (próximo N.º de socio, cierre de la
   // nómina fundacional, mensaje, derecho de admisión) y el perfil de
   // quien está logueado: cuando hay Supabase, viven en el servidor,
@@ -1139,7 +1138,8 @@
   ["green", "orange", "bg"].forEach((k) => $("#" + k + "Color").oninput = (e) => document.documentElement.style.setProperty("--" + k, e.target.value));
   $("#saveTheme").onclick = () => { const t = { green: $("#greenColor").value, orange: $("#orangeColor").value, bg: $("#bgColor").value }; write(KEYS.theme, t); applyTheme(t); toast("Apariencia guardada"); };
   $("#resetTheme").onclick = () => { localStorage.removeItem(KEYS.theme); applyTheme(DEFAULTS); toast("Paleta restablecida"); };
-  $("#themeBtn").onclick = () => { dark = !dark; document.documentElement.style.setProperty("--bg", dark ? "#171918" : $("#bgColor").value); document.documentElement.style.setProperty("--card", dark ? "rgba(37,40,38,.88)" : "rgba(255,255,255,.88)"); document.documentElement.style.setProperty("--ink", dark ? "#f5f5f2" : "#202124"); document.documentElement.style.setProperty("--muted", dark ? "#a8aca8" : "#72767d"); document.documentElement.style.setProperty("--sidebar", dark ? "rgba(28,30,29,.9)" : "rgba(246,247,244,.86)"); };
+  $("#themeBtn").onclick = () => window.CimientosTheme.toggle();
+  window.CimientosTheme.syncButton();
   // ---------------- Login administrado por Supabase ----------------
   // LOGIN_REQUIRED se controla desde config.js. En producción permanece
   // activo para que ningún dato administrativo quede expuesto.
@@ -1158,12 +1158,6 @@
     // y se actualiza apenas llega la respuesta del servidor.
     await cargarDesdeSupabase();
     if (window.cimientosOperations) await window.cimientosOperations.refresh();
-    if (new URLSearchParams(location.search).get("invite") === "1") {
-      setTimeout(() => {
-        modal("Crear tu contraseña", `<p style="color:var(--muted);font-size:12px">Tu invitación fue aceptada. Elegí una contraseña de al menos 8 caracteres para ingresar al panel.</p><div class="formfield"><label>Nueva contraseña</label><input id="invitePassword" type="password" minlength="8" autocomplete="new-password"></div><div style="display:flex;justify-content:flex-end;margin-top:16px"><button class="btn btn-primary" id="saveInvitePassword">Guardar contraseña</button></div>`);
-        $("#saveInvitePassword").onclick = async () => { const password = $("#invitePassword").value; if (password.length < 8) return toast("La contraseña debe tener al menos 8 caracteres"); const { error } = await supabaseClient.auth.updateUser({ password }); if (error) return toast("No se pudo guardar la contraseña"); history.replaceState({}, "", "panel.html"); closeModal(); toast("Contraseña creada. Ya podés usar el panel."); };
-      }, 250);
-    }
   }
 
   async function initAuthGate() {
@@ -1173,11 +1167,19 @@
     const loginError = $("#loginError");
     const loginBtn = $("#loginBtn");
     const logoutBtn = $("#logoutBtn");
-    function showLogin() { if (loginScreen) loginScreen.style.display = "grid"; if (logoutBtn) logoutBtn.style.display = "none"; }
-    function showPanel() { if (loginScreen) loginScreen.style.display = "none"; if (logoutBtn) logoutBtn.style.display = ""; }
+    function showLogin() { if (loginScreen) loginScreen.style.display = "grid"; if (logoutBtn) logoutBtn.style.display = "none"; document.querySelectorAll('.app,.mobilebar').forEach(el => el.inert = true); }
+    function showPanel() { if (loginScreen) loginScreen.style.display = "none"; if (logoutBtn) logoutBtn.style.display = ""; document.querySelectorAll('.app,.mobilebar').forEach(el => el.inert = false); }
     try {
-      const { data } = await supabaseClient.auth.getSession();
-      if (data && data.session) { showPanel(); startApp(); } else { showLogin(); }
+      const { data, error } = await supabaseClient.auth.getSession();
+      const invitation = window.CimientosInvitation;
+      if (invitation.failed || (invitation.required && (error || !data?.session))) {
+        showLogin();
+        loginError.textContent = 'El enlace venció, ya se usó o no pudo verificarse. Escribí tu correo y elegí «Crear o recuperar contraseña» para recibir uno nuevo.';
+        loginError.style.display = 'block';
+      } else if (data?.session && invitation.required) {
+        showLogin();
+        invitation.present(supabaseClient.auth, data.session.user.id, () => { showPanel(); startApp(); toast('Contraseña guardada. Bienvenido/a.'); });
+      } else if (data?.session) { showPanel(); startApp(); } else { showLogin(); }
     } catch (err) { console.error("Supabase (sesión):", err); showLogin(); }
     if (loginForm) loginForm.addEventListener("submit", async (e) => {
       e.preventDefault();

@@ -808,6 +808,16 @@
   // servidor. Nunca pisamos un borrador propio que ya tenga contenido.
   let preRegistroId = null;
   const preToken = urlParams.get("pre");
+  // RPC builders are thenable, not native Promises: use await, not .catch().
+  // Tracking must never turn a successfully saved application into a failure.
+  async function syncPreRegistro(functionName, params) {
+    try {
+      const { error } = await supabaseClient.rpc(functionName, params);
+      return !error;
+    } catch (_) {
+      return false;
+    }
+  }
   (async function prefillFromToken() {
     if (!preToken || !supabaseClient) return;
     try {
@@ -822,7 +832,7 @@
         if (row.nombre_contacto) document.getElementById("apellidos_nombres").value = row.nombre_contacto;
         if (row.celular_whatsapp) document.getElementById("celular_whatsapp").value = row.celular_whatsapp;
       }
-      supabaseClient.rpc("fn_marcar_preregistro_iniciado", { p_token: preToken }).catch(() => {});
+      await syncPreRegistro("fn_marcar_preregistro_iniciado", { p_token: preToken });
     } catch (e) {
       /* token inválido, vencido o sin conexión: seguimos sin prellenar */
     }
@@ -833,6 +843,7 @@
 
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
+    if (submitBtn.disabled) return;
     if (!validateStep(current)) return;
 
     submitBtn.disabled = true;
@@ -915,7 +926,7 @@
           document.getElementById("successNumero").innerText = result && result.referencia ? result.referencia : "RECIBIDA";
           if (preToken) {
             const solicitudId = result && (result.id || result.solicitud_id) || null;
-            supabaseClient.rpc("fn_marcar_preregistro_completado", { p_token: preToken, p_solicitud_id: solicitudId }).catch(() => {});
+            void syncPreRegistro("fn_marcar_preregistro_completado", { p_token: preToken, p_solicitud_id: solicitudId });
           }
         } else {
           payload.id = "local-" + Date.now();

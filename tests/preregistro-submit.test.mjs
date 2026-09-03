@@ -1,0 +1,22 @@
+import {readFileSync} from 'node:fs';
+import {runInNewContext} from 'node:vm';
+import assert from 'node:assert/strict';
+const html=readFileSync(new URL('../public/formulario.html',import.meta.url),'utf8');
+const helper=html.slice(html.indexOf('  async function syncPreRegistro('),html.indexOf('  (async function prefillFromToken()'));
+let executions=0;
+// Match the SDK's thenable builder: deliberately has no .catch method.
+let rpc=()=>({then(resolve){executions++;resolve({error:null});}});
+const context={supabaseClient:{rpc:(...args)=>rpc(...args)}};
+const sync=runInNewContext(helper+'\nsyncPreRegistro;',context);
+assert.equal(await sync('started',{}),true);
+assert.equal(executions,1);
+rpc=()=>({then(resolve){resolve({error:{message:'tracking failure'}});}});
+assert.equal(await sync('completed',{}),false);
+rpc=()=>({then(_resolve,reject){reject(Error('offline'));}});
+assert.equal(await sync('completed',{}),false);
+rpc=()=>{throw Error('sync failure');};
+assert.equal(await sync('completed',{}),false);
+assert(!/rpc\([^;]+\.catch\(/.test(html));
+assert(html.includes('if (submitBtn.disabled) return;'));
+assert(html.includes('void syncPreRegistro("fn_marcar_preregistro_completado"'));
+console.log('OK: RPC sin .catch, seguimiento ejecutado y errores aislados del envío confirmado.');
