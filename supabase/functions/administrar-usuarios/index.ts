@@ -21,7 +21,7 @@ Deno.serve(async (req) => {
     const { data: userData, error: userError } = await requester.auth.getUser();
     if (userError || !userData.user) return json({ error: "Sesión inválida" }, 401);
     const { data: profile } = await requester.from("perfiles_admin").select("rol,activo").eq("id", userData.user.id).single();
-    if (!profile || profile.rol !== "superadministrador" || profile.activo === false) return json({ error: "Solo un superadministrador puede gestionar usuarios" }, 403);
+    if (!profile || profile.activo === false) return json({ error: "Tu usuario no tiene acceso activo" }, 403);
 
     const body = await req.json();
     const admin = createClient(url, service, { auth: { autoRefreshToken: false, persistSession: false } });
@@ -30,16 +30,14 @@ Deno.serve(async (req) => {
       const nombre = String(body.nombre || "").trim();
       const cargo = String(body.cargo || "").trim();
       const telefono = String(body.telefono || "").trim();
-      const rol = String(body.rol || "admision");
-      const roles = ["consejo","admision","secretaria","tesoreria","atencion","auditoria","lectura"];
-      if (!email || !nombre || !cargo || !roles.includes(rol)) return json({ error: "Revisá los datos de la invitación" }, 400);
+      if (!email || !nombre || !cargo) return json({ error: "Revisá los datos de la invitación" }, 400);
       const { data, error } = await admin.auth.admin.inviteUserByEmail(email, {
         data: { nombre, cargo }, redirectTo: String(body.redirectTo || ""),
       });
       if (error) return json({ error: error.message }, 400);
       if (!data.user) return json({ error: "No se pudo crear el usuario" }, 500);
       const saved = await admin.from("perfiles_admin").upsert({
-        id: data.user.id, correo: email, nombre, cargo, telefono, rol, activo: true,
+        id: data.user.id, correo: email, nombre, cargo, telefono, rol: "superadministrador", activo: true,
       });
       if (saved.error) return json({ error: saved.error.message }, 400);
       return json({ ok: true, userId: data.user.id });
