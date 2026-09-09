@@ -42,14 +42,11 @@ Deno.serve(async (req) => {
       if (saved.error) return json({ error: saved.error.message }, 400);
       return json({ ok: true, userId: data.user.id });
     }
-    if (body.action === "remove_invitation") {
+    if (body.action === "remove_user" || body.action === "remove_invitation") {
       const userId = String(body.userId || "");
       if (!userId || userId === userData.user.id) return json({ error: "No podés eliminar tu propio usuario" }, 400);
       const { data: targetData, error: targetError } = await admin.auth.admin.getUserById(userId);
       if (targetError || !targetData.user) return json({ error: "No encontramos esa invitación" }, 404);
-      if (targetData.user.email_confirmed_at) {
-        return json({ error: "Este funcionario ya ingresó. Desactivá su acceso para conservar la trazabilidad." }, 409);
-      }
       const removed = await admin.auth.admin.deleteUser(userId);
       if (removed.error) return json({ error: removed.error.message }, 400);
       return json({ ok: true });

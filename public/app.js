@@ -305,7 +305,7 @@
   }
   function tipoSocio(r) { return r.tipo_socio === "fundador" ? "fundador" : "ordinario"; }
   function initials(r) { const n = nombre(r).trim(); if (!n || n === "Sin nombre") return "?"; const parts = n.split(/\s+/).filter(Boolean); return ((parts[0]?.[0] || "") + (parts[1]?.[0] || "")).toUpperCase() || "?"; }
-  function avatarHtml(r, size) { size = size || 34; return r.foto_base64 ? `<img src="${r.foto_base64}" alt="" style="width:${size}px;height:${size}px;border-radius:50%;object-fit:cover;flex:0 0 auto">` : `<span class="avatar" style="width:${size}px;height:${size}px;font-size:${Math.round(size * 0.38)}px;flex:0 0 auto">${esc(initials(r))}</span>`; }
+  function avatarHtml(r, size) { size = size || 34; return r.foto_base64 ? `<img src="${r.foto_base64}" alt="Foto de ${esc(nombre(r))}" style="width:${size}px;height:${size}px;border-radius:50%;object-fit:cover;flex:0 0 auto">` : `<span class="avatar avatar-person" style="width:${size}px;height:${size}px;flex:0 0 auto" aria-label="Sin foto"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4.5 21a7.5 7.5 0 0 1 15 0"/></svg></span>`; }
   function photoPickerHtml(r) {
     return `<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px" id="photoPicker">
       <div id="photoPreview">${avatarHtml(r, 56)}</div>
@@ -544,22 +544,25 @@
     const numeroSocio = r.numero_socio || "—";
     const numeroSolicitud = "0001-" + String(r.numero_solicitud || 0).padStart(4, "0");
     const docCode = "FIC-" + (r.numero_socio || "SOL" + String(r.numero_solicitud || 0).padStart(4, "0"));
-    const printLogo = window.cimientosIdentity?.get().logo || new URL("assets/logo-cimientos.png", location.href).href;
+    const documentIdentity = window.cimientosIdentity?.get() || {};
+    const printLogo = documentIdentity.documento_logo || documentIdentity.logo || new URL("assets/logo-cimientos.png", location.href).href;
+    const documentName = documentIdentity.documento_nombre || "Cooperativa Cimientos Ltda.";
+    const documentContact = documentIdentity.documento_contacto || "+595 974 635630 · cooperativacimientosltda2026@gmail.com";
 
     const watermark = admitted ? "" : `<div class="watermark">${r.estado === "rechazado" ? "SOLICITUD RECHAZADA" : "EN REVISIÓN"}</div>`;
 
     const masthead = (tipo) => `
       <header class="mh">
         <div class="mh-brand">
-          <img class="mh-mark" src="${printLogo}" alt="Cooperativa Cimientos Ltda.">
-          <span class="mh-contact">+595 974 635630<br>cooperativacimientosltda2026@gmail.com</span>
+          <img class="mh-mark" src="${printLogo}" alt="${esc(documentName)}">
+          <span class="mh-contact">${esc(documentContact)}</span>
         </div>
         <div class="mh-doc"><span class="mh-tag">${esc(tipo)}</span></div>
       </header>`;
 
     const pageFooter = (codigo) => `
       <footer class="pf">
-        <span>Documento interno · Cooperativa Cimientos Ltda.</span>
+        <span>Documento interno · ${esc(documentName)}</span>
         <span>${esc(codigo)} · C.I. ${esc(r.cedula || "—")}</span>
       </footer>`;
 
@@ -848,13 +851,13 @@
         <div class="formfield"><label>Nacionalidad</label><input id="fNac" value="${esc(p.nacionalidad || "Paraguaya")}"></div>
         <div class="formfield"><label>Fecha de nacimiento</label><input id="fNacim" type="date" value="${esc(p.fecha_nacimiento || "")}"></div>
         <div class="formfield"><label>Lugar de nacimiento</label><input id="fLugarNac" value="${esc(p.lugar_nacimiento || "")}"></div>
-        <div class="formfield"><label>Estado civil</label><input id="fCivil" value="${esc(p.estado_civil || "")}"></div>
-        <div class="formfield"><label>Género</label><input id="fGenero" value="${esc(p.genero || "")}"></div>
+        <div class="formfield"><label>Estado civil</label><select id="fCivil"><option value="">Seleccionar</option>${["Soltero/a","Casado/a","Unión de hecho","Separado/a","Divorciado/a","Viudo/a"].map(v=>`<option${p.estado_civil===v?" selected":""}>${v}</option>`).join("")}</select></div>
+        <div class="formfield"><label>Género</label><select id="fGenero"><option value="">Seleccionar</option><option value="F"${["F","Femenino"].includes(p.genero)?" selected":""}>Femenino</option><option value="M"${["M","Masculino"].includes(p.genero)?" selected":""}>Masculino</option><option value="Otro"${p.genero==="Otro"?" selected":""}>Otro</option></select></div>
         <div class="formfield"><label>Profesión / oficio</label><input id="fProf" value="${esc(p.profesion_oficio || "")}"></div>
         <div class="formfield"><label>Ciudad</label><input id="fCiudad" value="${esc(p.ciudad || "")}"></div>
         <div class="formfield"><label>Barrio</label><input id="fBarrio" value="${esc(p.barrio || "")}"></div>
         <div class="formfield"><label>Departamento</label><input id="fDepartamento" value="${esc(p.departamento || "")}"></div>
-        <div class="formfield"><label>Tipo de vivienda</label><input id="fVivienda" value="${esc(p.tipo_vivienda || "")}"></div>
+        <div class="formfield"><label>Tipo de vivienda</label><select id="fVivienda"><option value="">Seleccionar</option>${["Propia","Alquilada","Familiar","Cedida","Hipotecada","Otra"].map(v=>`<option${p.tipo_vivienda===v?" selected":""}>${v}</option>`).join("")}</select></div>
         <div class="formfield"><label>Dirección</label><input id="fDireccion" value="${esc(p.direccion || "")}"></div>
         <div class="formfield"><label>Celular / WhatsApp</label><input id="fCelular" value="${esc(p.celular_whatsapp || "")}"></div>
         <div class="formfield"><label>Correo electrónico</label><input id="fCorreo" type="email" value="${esc(p.correo_electronico || p.correo || "")}"></div>
@@ -882,9 +885,11 @@
     $("#fCancel").onclick = closeModal;
     $("#fSave").onclick = busyClick($("#fSave"), async () => {
       const nombreVal = $("#fName").value.trim();
-      const cedula = $("#fCedula").value.trim();
+      const cedula = $("#fCedula").value.replace(/\D/g, "");
       const numero = $("#fNumero").value.trim();
       if (!nombreVal || !cedula) return toast("Completá nombre y cédula");
+      if (cedula.length < 4 || cedula.length > 10) return toast("Revisá la cédula: debe contener entre 4 y 10 números");
+      if ($("#fCorreo").value && !$("#fCorreo").checkValidity()) return toast("Revisá el correo electrónico");
       if (!numero || !/^\d+$/.test(numero)) return toast("El número de socio debe ser numérico");
       const numeroPad = numero.padStart(4, "0");
       const existente = p.id ? solicitudes.find((x) => x.id === p.id) : null;
@@ -899,9 +904,9 @@
         tipo_socio: "fundador",
         apellidos_nombres: nombreVal, cedula,
         nacionalidad: $("#fNac").value.trim() || "Paraguaya",
-        fecha_nacimiento: $("#fNacim").value, lugar_nacimiento: $("#fLugarNac").value.trim(), estado_civil: $("#fCivil").value.trim(), genero: $("#fGenero").value.trim(),
+        fecha_nacimiento: $("#fNacim").value || null, lugar_nacimiento: $("#fLugarNac").value.trim(), estado_civil: $("#fCivil").value, genero: $("#fGenero").value,
         profesion_oficio: $("#fProf").value.trim(),
-        ciudad: $("#fCiudad").value.trim(), barrio: $("#fBarrio").value.trim(), departamento: $("#fDepartamento").value.trim(), tipo_vivienda: $("#fVivienda").value.trim(), direccion: $("#fDireccion").value.trim(),
+        ciudad: $("#fCiudad").value.trim(), barrio: $("#fBarrio").value.trim(), departamento: $("#fDepartamento").value.trim(), tipo_vivienda: $("#fVivienda").value, direccion: $("#fDireccion").value.trim(),
         celular_whatsapp: $("#fCelular").value.trim(), correo_electronico: $("#fCorreo").value.trim(),
         condicion_laboral: $("#fCondicion").value.trim(), empresa_ruc: $("#fEmpresa").value.trim(),
         cargo_laboral: $("#fCargo").value.trim(), antiguedad_laboral: $("#fAntiguedad").value.trim(), direccion_laboral: $("#fDireccionLaboral").value.trim(), ingreso_mensual: parseGs($("#fIngreso").value),
@@ -936,6 +941,7 @@
         log(`${config.administrador} ${existente ? "actualizó" : "agregó"} a ${nombreVal} como socio fundador N.º ${numeroPad}`);
         closeModal(); renderAll(); toast(existente ? "Fundador actualizado" : "Socio fundador agregado");
       } catch (err) {
+        console.error("Error al guardar socio fundador", err);
         toast(friendlyError(err, "No se pudieron guardar los datos del socio"));
       }
     });
@@ -984,12 +990,12 @@
         $("#staffList").innerHTML = (data || []).map((s) => `<div class="item"><div class="item-main"><strong>${esc(s.nombre)}</strong><small>${esc(s.cargo || "Sin descripción")} · ${esc(s.correo || "—")}${s.telefono ? ` · ${esc(s.telefono)}` : ""}</small><span class="badge ${s.activo === false ? "observada" : "activo"}">${s.activo === false ? "Sin acceso" : "Acceso completo"}</span></div>${esSuperadmin() && s.id !== perfilActual.id ? `<div class="staff-actions"><button class="btn btn-secondary" data-toggle-staff="${esc(s.id)}" data-active="${s.activo === false ? "false" : "true"}">${s.activo === false ? "Activar acceso" : "Desactivar acceso"}</button>${s.activo === false ? `<button class="btn btn-secondary" style="color:var(--danger)" data-remove-staff="${esc(s.id)}" data-staff-name="${esc(s.nombre)}">Eliminar invitación</button>` : ""}</div>` : ""}</div>`).join("") || '<div class="empty">Todavía no hay funcionarios registrados.</div>';
         $$('[data-toggle-staff]').forEach((button) => button.onclick = busyClick(button, async () => { try { const activate = button.dataset.active !== "true"; const { error: e2 } = await supabaseClient.rpc("fn_actualizar_estado_perfil", { p_id: button.dataset.toggleStaff, p_activo: activate }); if (e2) throw e2; toast(activate ? "Usuario activado" : "Usuario desactivado"); renderSetting("funcionarios"); } catch (err) { toast(friendlyError(err, "No se pudo cambiar el estado")); } }));
         $$('[data-remove-staff]').forEach((button) => button.onclick = busyClick(button, async () => {
-          if (!confirm(`¿Eliminar la invitación de ${button.dataset.staffName}? Solo se eliminará si la persona todavía no creó su acceso.`)) return;
+          if (!confirm(`¿Eliminar definitivamente el acceso de ${button.dataset.staffName}? La actividad histórica conservará su nombre.`)) return;
           try {
-            const { data: removed, error: removeError } = await supabaseClient.functions.invoke("administrar-usuarios", { body: { action: "remove_invitation", userId: button.dataset.removeStaff } });
+            const { data: removed, error: removeError } = await supabaseClient.functions.invoke("administrar-usuarios", { body: { action: "remove_user", userId: button.dataset.removeStaff } });
             if (removeError) throw removeError;
             if (removed && removed.error) throw Error(removed.error);
-            toast("Invitación eliminada"); renderSetting("funcionarios");
+            toast("Funcionario eliminado"); renderSetting("funcionarios");
           } catch (err) { toast(friendlyError(err, "No se pudo eliminar la invitación")); }
         }));
       });
@@ -1052,7 +1058,21 @@
     if (name === "respaldo") {
       const cloud = !!supabaseClient;
       if (cloud) {
-        p.innerHTML = head("Respaldo y conservación", "En producción no se permite borrar todos los datos ni reiniciar las numeraciones. Los pagos se anulan y los socios conservan su matrícula histórica.") + '<p>Los respaldos completos deben incluir base de datos y archivos adjuntos. La exportación del padrón está disponible en Libro de Socios; no reemplaza un respaldo completo.</p>';
+        p.innerHTML = head("Respaldo y conservación", "Descargá una copia legible de los datos del panel sin modificar la información original.") + '<p>Incluye socios, solicitudes, pre-registros, tareas, documentos, resoluciones, pagos y actividad. Los archivos privados permanecen protegidos en Supabase Storage.</p><button class="btn btn-primary" id="backupCloudBtn">Descargar respaldo de datos</button><p class="muted" id="backupCloudStatus" style="margin-top:12px">El respaldo no reinicia numeraciones ni elimina registros.</p>';
+        $("#backupCloudBtn").onclick = busyClick($("#backupCloudBtn"), async () => {
+          const tables = ["solicitudes_socios", "pre_registros", "tareas_operativas", "documentos_socios", "resoluciones_consejo", "movimientos_aportes", "campanias", "actividad", "auditoria_operativa", "auditoria_solicitudes", "tramites_baja", "matriculas_historicas", "certificados_aportacion", "liquidaciones_socios", "perfiles_admin", "configuracion_institucional"];
+          const backup = { formato: "Cimientos respaldo v1", generado_en: new Date().toISOString(), tablas: {}, avisos: [] };
+          try {
+            for (const table of tables) {
+              const { data, error } = await supabaseClient.from(table).select("*");
+              if (error) backup.avisos.push(`${table}: ${error.message}`);
+              else backup.tablas[table] = data || [];
+            }
+            const a = document.createElement("a"), blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
+            a.href = URL.createObjectURL(blob); a.download = `respaldo-cimientos-${new Date().toISOString().slice(0,10)}.json`; a.click(); URL.revokeObjectURL(a.href);
+            $("#backupCloudStatus").textContent = "Respaldo descargado correctamente.";
+          } catch (err) { $("#backupCloudStatus").textContent = friendlyError(err, "No se pudo generar el respaldo."); }
+        });
         return;
       }
       const canClear = !cloud || esSuperadmin();

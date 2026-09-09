@@ -5,7 +5,7 @@ import {fileURLToPath} from 'node:url';
 import path from 'node:path';
 const root=fileURLToPath(new URL('../public/',import.meta.url));
 const types={'.html':'text/html','.js':'text/javascript','.css':'text/css','.png':'image/png','.woff2':'font/woff2','.svg':'image/svg+xml'};
-http.createServer(async(req,res)=>{
+const server=http.createServer(async(req,res)=>{
   try{
     const pathname=decodeURIComponent(new URL(req.url,'http://localhost').pathname);
     res.setHeader('Cache-Control','no-store');
@@ -21,4 +21,6 @@ http.createServer(async(req,res)=>{
     res.setHeader('Content-Type',types[path.extname(file)]||'application/octet-stream');
     res.end(await readFile(file));
   }catch {res.writeHead(404);res.end();}
-}).listen(8796,'127.0.0.1',()=>console.log('Offline preview: http://127.0.0.1:8796/panel.html'));
+});
+const port=Number(process.env.PORT||8796);
+server.listen(port,'127.0.0.1',()=>console.log(`Offline preview: http://127.0.0.1:${port}/panel.html`));
