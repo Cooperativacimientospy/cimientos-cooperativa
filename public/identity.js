@@ -1,6 +1,6 @@
 (function () {
   "use strict";
-  const defaults = { nombre: "Cooperativa Cimientos", subtitulo: "Panel de administración", logo: "", favicon: "", green: "#6a9c20", orange: "#ff7a00", bg: "#f3f4f1" };
+  const defaults = { nombre: "Cooperativa Cimientos", subtitulo: "Panel de administración", logo: "", favicon: "", green: "#27452C", orange: "#E56915", bg: "#F6F6F6" };
   const key = "cimientos_identidad_v1";
   const esc = value => String(value ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
   const raster = value => /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(value);

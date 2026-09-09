@@ -37,7 +37,7 @@
     }
     return null;
   }
-  const DEFAULTS = { green: "#6a9c20", orange: "#ff7a00", bg: "#f3f4f1", proximoSocio: 1, administrador: "Administrador local", correoAdministrador: "", cargoAdministrador: "Superadministrador", fotoAdministrador: "" };
+  const DEFAULTS = { green: "#27452C", orange: "#E56915", bg: "#F6F6F6", proximoSocio: 1, administrador: "Administrador local", correoAdministrador: "", cargoAdministrador: "Superadministrador", fotoAdministrador: "" };
   const $ = (s) => document.querySelector(s);
   const $$ = (s) => Array.from(document.querySelectorAll(s));
   const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -65,6 +65,8 @@
   let config = Object.assign({}, DEFAULTS, read(KEYS.config, {}));
   let filter = "todos";
   let memberFilter = "todos";
+  let leadFilter = "todos";
+  let leadSearch = "";
   // Configuración institucional (próximo N.º de socio, cierre de la
   // nómina fundacional, mensaje, derecho de admisión) y el perfil de
   // quien está logueado: cuando hay Supabase, viven en el servidor,
@@ -100,11 +102,13 @@
   window.cimientosSupabase = supabaseClient;
 
   async function upsertRemote(table, row) {
-    if (!supabaseClient || !row) return;
-    try {
-      const { error } = await supabaseClient.from(table).upsert(row);
-      if (error) { console.error("Supabase (" + table + "):", error.message); toast("No se pudo sincronizar con Supabase"); }
-    } catch (err) { console.error("Supabase (" + table + "):", err); }
+    if (!supabaseClient || !row) return row;
+    const { data, error } = await supabaseClient.from(table).upsert(row).select().single();
+    if (error) {
+      console.error("Supabase (" + table + "):", error);
+      throw error;
+    }
+    return data;
   }
   async function deleteRemote(table, id) {
     if (!supabaseClient || !id) return;
@@ -387,11 +391,25 @@
   function openRequest(id) {
     const r = solicitudes.find((x) => String(x.id) === String(id)); if (!r) return;
     const beneficiaries = Array.isArray(r.beneficiarios) && r.beneficiarios.length ? r.beneficiarios.map((b) => `${b.nombre} (${b.parentesco || "—"}, ${b.porcentaje || 0}%)`).join(" · ") : "Sin beneficiarios";
+    const personalDetails = [
+      detail("Nombre completo", nombre(r)), detail("Cédula", r.cedula),
+      detail("Nacionalidad", r.nacionalidad), detail("Fecha de nacimiento", fmtDate(r.fecha_nacimiento)),
+      detail("Lugar de nacimiento", r.lugar_nacimiento), detail("Estado civil", r.estado_civil),
+      detail("Género", r.genero), detail("Profesión u oficio", r.profesion_oficio),
+      detail("Celular", tel(r)), detail("Correo", r.correo_electronico),
+      detail("Departamento", r.departamento), detail("Ciudad / barrio", [r.ciudad, r.barrio].filter(Boolean).join(", ")),
+      detail("Tipo de vivienda", r.tipo_vivienda), detail("Dirección particular", r.direccion),
+      detail("Condición laboral", r.condicion_laboral), detail("Empresa / RUC", r.empresa_ruc),
+      detail("Cargo laboral", r.cargo_laboral), detail("Antigüedad laboral", r.antiguedad_laboral),
+      detail("Dirección laboral", r.direccion_laboral), detail("Ingreso mensual", r.ingreso_mensual ? fmtGs(r.ingreso_mensual) : "—"),
+      detail("Origen de fondos", r.origen_fondos), detail("Beneficiarios", beneficiaries)
+    ].join("");
     if (tipoSocio(r) === "fundador") {
       const pendiente = !!r.datos_pendiente_revision;
-      modal(`Socio Fundador N.º ${r.numero_socio || "—"}${pendiente ? " · Pendiente de revisión" : ""}`, `${photoPickerHtml(r)}<div class="detailgrid">${detail("Nombre", nombre(r))}${detail("Cédula", r.cedula)}${detail("Nacimiento", fmtDate(r.fecha_nacimiento))}${detail("Celular", tel(r))}${detail("Correo", r.correo_electronico)}${detail("Ciudad", [r.ciudad, r.barrio].filter(Boolean).join(", "))}${detail("Dirección", r.direccion)}${detail("Actividad", r.condicion_laboral)}${detail("Origen de fondos", r.origen_fondos)}${detail("Certificados suscritos", (r.certificados_suscritos || 100) + " × Gs. 30.000")}${detail("Capital integrado (60%)", fmtGs(r.capital_integrado || Math.round((r.capital_suscrito || 3000000) * 0.6)))}${detail("Fecha de constitución", fmtDate(r.fecha_constitucion || FECHA_CONSTITUCION))}${detail("Beneficiarios", beneficiaries)}</div>${pendiente ? '<p style="color:var(--orange);font-size:12px;font-weight:700">Estos datos los completó el propio socio por el link público. Revisalos y confirmá el número de socio y el capital fundacional.</p>' : ""}<div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;margin-top:16px">${tel(r) ? '<button class="btn btn-whatsapp" id="reqWhatsApp" title="Guardá el PDF y adjuntalo en el chat">Abrir WhatsApp Web</button>' : ""}<button class="btn btn-secondary" id="reqPrint">Imprimir ficha</button><button class="btn btn-primary" id="reqReview">${pendiente ? "Revisar y confirmar datos" : "Editar datos"}</button></div>`);
+      modal(`Socio Fundador N.º ${r.numero_socio || "—"}${pendiente ? " · Pendiente de revisión" : ""}`, `${photoPickerHtml(r)}<div class="detailgrid">${personalDetails}${detail("Estado societario", r.estado_societario || "Activo")}${detail("Certificados suscritos", (r.certificados_suscritos || 100) + " × Gs. 30.000")}${detail("Capital suscrito", fmtGs(r.capital_suscrito || 3000000))}${detail("Capital integrado", fmtGs(r.capital_integrado || Math.round((r.capital_suscrito || 3000000) * 0.6)))}${detail("Saldo de capital", fmtGs(Math.max(0, (r.capital_suscrito || 3000000) - (r.capital_integrado || 1800000))))}${detail("Fecha de constitución", fmtDate(r.fecha_constitucion || FECHA_CONSTITUCION))}</div>${pendiente ? '<p style="color:var(--orange);font-size:12px;font-weight:700">Estos datos los completó el propio socio por el link público. Revisalos y confirmá el número de socio y el capital fundacional.</p>' : ""}<div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;margin-top:16px">${tel(r) ? '<button class="btn btn-whatsapp" id="reqWhatsApp" title="Guardá el PDF y adjuntalo en el chat">Abrir WhatsApp Web</button>' : ""}<button class="btn btn-secondary" id="reqContributions">Ver aportes</button><button class="btn btn-secondary" id="reqPrint">Imprimir ficha</button><button class="btn btn-primary" id="reqReview">${pendiente ? "Revisar y confirmar datos" : "Editar datos"}</button></div>`);
       wirePhotoPicker(r);
       if (tel(r)) $("#reqWhatsApp").onclick = () => shareMemberWhatsApp(r);
+      $("#reqContributions").onclick = () => { closeModal(); go("aportes"); setTimeout(() => { const input = $("#opContributionSearch"); if (input) { input.value = r.cedula || r.numero_socio || nombre(r); input.dispatchEvent(new Event("input", { bubbles: true })); } }, 40); };
       $("#reqPrint").onclick = () => printRequest(r);
       $("#reqReview").onclick = () => {
         if (!pendiente && configInstitucional && configInstitucional.cierre_fundacional && !esSuperadmin()) {
@@ -402,7 +420,7 @@
       return;
     }
     if (r.estado === "aprobado") {
-      modal(`Socio N.º ${r.numero_socio || "—"}`, `${photoPickerHtml(r)}<div class="detailgrid">${detail("Nombre", nombre(r))}${detail("Cédula", r.cedula)}${detail("Nacimiento", fmtDate(r.fecha_nacimiento))}${detail("Celular", tel(r))}${detail("Correo", r.correo_electronico)}${detail("Ciudad", [r.ciudad, r.departamento].filter(Boolean).join(", "))}${detail("Dirección", r.direccion)}${detail("Actividad", r.condicion_laboral)}${detail("Origen de fondos", r.origen_fondos)}${detail("N.º de resolución", r.resolucion_numero)}${detail("Fecha de admisión", fmtDate(r.fecha_revision))}${detail("Beneficiarios", beneficiaries)}</div><div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;margin-top:16px">${tel(r) ? '<button class="btn btn-whatsapp" id="reqWhatsApp" title="Guardá el PDF y adjuntalo en el chat">Abrir WhatsApp Web</button>' : ""}<button class="btn btn-secondary" id="reqContributions">Ver aportes</button><button class="btn btn-primary" id="reqPrint">Abrir carpeta del socio</button></div>`);
+      modal(`Socio N.º ${r.numero_socio || "—"}`, `${photoPickerHtml(r)}<div class="detailgrid">${personalDetails}${detail("Estado societario", r.estado_societario || "Activo")}${detail("N.º de resolución", r.resolucion_numero)}${detail("Fecha de admisión", fmtDate(r.fecha_revision || r.fecha_ingreso))}${detail("Referente", r.referente_nombre)}${detail("Forma de pago", r.forma_pago)}</div><div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;margin-top:16px">${tel(r) ? '<button class="btn btn-whatsapp" id="reqWhatsApp" title="Guardá el PDF y adjuntalo en el chat">Abrir WhatsApp Web</button>' : ""}<button class="btn btn-secondary" id="reqContributions">Ver aportes</button><button class="btn btn-primary" id="reqPrint">Abrir carpeta del socio</button></div>`);
       wirePhotoPicker(r);
       if (tel(r)) $("#reqWhatsApp").onclick = () => shareMemberWhatsApp(r);
       $("#reqPrint").onclick = () => printRequest(r);
@@ -678,14 +696,14 @@
         .mh-name strong{display:block;font-size:12px;letter-spacing:.01em}
         .mh-name span{display:block;font-size:7.5px;color:#767b73;max-width:60mm;line-height:1.35;margin-top:2px}
         .mh-doc{text-align:right}
-        .mh-tag{display:inline-block;background:#eef4e3;color:#4f8217;font-size:9px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;padding:3px 8px;border-radius:999px}
+        .mh-tag{display:inline-block;background:#eef4e3;color:#27452C;font-size:9px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;padding:3px 8px;border-radius:999px}
         .identity{position:relative;z-index:1;padding-bottom:3.5mm}
         .identity.tight{padding-bottom:5mm}
         .identity h1{margin:0 0 4px;font-size:19px;letter-spacing:-.02em}
         .identity-line{margin:0;font-size:10.5px;color:#5a5f58;font-weight:600}
         section{position:relative;z-index:1;padding:2.6mm 0;border-bottom:1px solid #e4e6e0;break-inside:avoid}
         section.tight{padding-bottom:2mm}
-        section h2{font-size:9.5px;text-transform:uppercase;letter-spacing:.08em;color:#4f8217;margin:0 0 2.4mm;font-weight:800}
+        section h2{font-size:9.5px;text-transform:uppercase;letter-spacing:.08em;color:#27452C;margin:0 0 2.4mm;font-weight:800}
         .grid{display:grid;grid-template-columns:1fr 1fr;column-gap:9mm;row-gap:2.2mm}
         .f{break-inside:avoid}
         .f small{display:block;color:#8a8f89;font-size:7.3px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:1px}
@@ -700,23 +718,23 @@
         .receipt-box{position:relative;z-index:1;border:1.5px solid #1c1e1c;border-radius:11px;padding:7mm 8mm;margin-top:2mm}
         .total-row{display:flex;justify-content:space-between;align-items:baseline;border-top:1.5px dashed #c9cdc2;margin-top:6mm;padding-top:5mm}
         .total-row span{font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:#5a5f58;font-weight:700}
-        .total-row strong{font-size:19px;font-weight:800;color:#4f8217;font-variant-numeric:tabular-nums}
+        .total-row strong{font-size:19px;font-weight:800;color:#27452C;font-variant-numeric:tabular-nums}
         .legal-note{position:relative;z-index:1;font-size:9px;line-height:1.6;color:#767b73;margin-top:10mm}
         .cert{position:relative;z-index:1;max-width:150mm;margin:14mm auto 0;text-align:center}
-        .cert-eyebrow{display:block;font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#4f8217}
+        .cert-eyebrow{display:block;font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#27452C}
         .cert h1{font-family:"Nunito Sans",sans-serif;font-size:25px;font-weight:800;margin:6px 0 8px}
-        .cert-rule{width:44px;height:2px;background:#6a9c20;margin:0 auto 12mm}
+        .cert-rule{width:44px;height:2px;background:#27452C;margin:0 auto 12mm}
         .cert p{font-family:"Nunito Sans",sans-serif;font-size:13px;line-height:1.85;text-align:left;margin:0 0 6mm;color:#26281f}
         .resolution-text{font-size:12px;line-height:1.75;margin:0;max-width:164mm}
         .resolution-signs{margin-top:34mm}
-        .cert-num{font-weight:700;color:#4f8217}
+        .cert-num{font-weight:700;color:#27452C}
         .checklist{position:relative;z-index:1;max-width:150mm;margin:16mm auto 0;border-top:1px solid #e4e6e0;padding-top:6mm;font-size:9.5px;color:#5a5f58}
         .checklist strong{display:block;margin-bottom:2mm;color:#26281f;font-size:10px}
         .checklist ul{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:1.6mm}
         .pf{position:absolute;left:16mm;right:16mm;bottom:9mm;display:flex;justify-content:space-between;border-top:1px solid #e4e6e0;padding-top:2.5mm;font-size:7.5px;color:#9a9e96;z-index:1}
         .actions{position:fixed;right:18px;bottom:18px;display:flex;gap:8px;z-index:9}
         .actions button{border:0;border-radius:12px;padding:11px 16px;font-weight:750;font-family:inherit;font-size:13px;cursor:pointer}
-        .print{background:#4f8217;color:#fff;box-shadow:0 8px 20px rgba(79,130,23,.32)}
+        .print{background:#27452C;color:#fff;box-shadow:0 8px 20px rgba(39,69,44,.32)}
         .whatsapp{background:#25D366;color:#fff}
         .close{background:#fff;border:1px solid #d7dad3!important}
         .hint{position:fixed;left:18px;bottom:18px;font-size:11px;color:#5a5f58;background:#fff;padding:8px 12px;border-radius:10px;border:1px solid #d7dad3;max-width:280px;z-index:9}
@@ -733,8 +751,16 @@
     if (!bulk) { const add = $("#newLeadBtn"), actions = document.createElement("div"); actions.className = "pagehead-actions"; add.before(actions); actions.append(add); bulk = document.createElement("button"); bulk.id = "bulkDeleteLeads"; bulk.className = "btn btn-secondary"; bulk.textContent = "Eliminar…"; add.before(bulk); }
     bulk.hidden = !["superadministrador", "admision", "secretaria", "atencion", "consejo"].includes(rolActual());
     bulk.onclick = () => bulkDeleteLeads(leads);
-    $("#leadsBody").innerHTML = leads.map((r) => `<tr><td><strong>${esc(r.nombre_contacto)}</strong></td><td>${esc(r.celular_whatsapp)}</td><td>${esc(r.origen || "Otro")}</td><td>${fmtDate(r.created_at)}</td><td>${badge(leadEstadoEfectivo(r))}</td><td><button class="linkbtn" data-lead="${esc(r.id)}">Gestionar</button></td></tr>`).join("") || '<tr><td colspan="6" class="empty">No hay pre-registros. Creá el primero cuando recibas una consulta.</td></tr>';
+    const visible = leads.filter((r) => {
+      const state = leadEstadoEfectivo(r);
+      const matchesState = leadFilter === "todos" || state === leadFilter;
+      const matchesText = `${r.nombre_contacto || ""} ${r.celular_whatsapp || ""} ${r.origen || ""}`.toLowerCase().includes(leadSearch);
+      return matchesState && matchesText;
+    });
+    $("#leadsBody").innerHTML = visible.map((r) => `<tr><td><strong>${esc(r.nombre_contacto)}</strong></td><td>${esc(r.celular_whatsapp)}</td><td>${esc(r.origen || "Otro")}</td><td>${fmtDate(r.updated_at || r.created_at)}</td><td>${badge(leadEstadoEfectivo(r))}</td><td><button class="linkbtn" data-lead="${esc(r.id)}">Gestionar</button></td></tr>`).join("") || '<tr><td colspan="6" class="empty">No hay pre-registros para estos filtros.</td></tr>';
     $$('[data-lead]').forEach((b) => b.onclick = () => openLead(b.dataset.lead));
+    if ($("#leadSearch")) { $("#leadSearch").value = leadSearch; $("#leadSearch").oninput = (e) => { leadSearch = e.target.value.toLowerCase(); renderLeads(); $("#leadSearch").focus(); $("#leadSearch").setSelectionRange(e.target.value.length, e.target.value.length); }; }
+    if ($("#leadFilter")) { $("#leadFilter").value = leadFilter; $("#leadFilter").onchange = (e) => { leadFilter = e.target.value; renderLeads(); }; }
   }
   function bulkDeleteLeads(rows) {
     const eligible = rows.filter(r => !r.solicitud_id && !["completado", "iniciado"].includes(r.estado));
@@ -821,14 +847,18 @@
         <div class="formfield"><label>Cédula de identidad</label><input id="fCedula" value="${esc(p.cedula || "")}"></div>
         <div class="formfield"><label>Nacionalidad</label><input id="fNac" value="${esc(p.nacionalidad || "Paraguaya")}"></div>
         <div class="formfield"><label>Fecha de nacimiento</label><input id="fNacim" type="date" value="${esc(p.fecha_nacimiento || "")}"></div>
+        <div class="formfield"><label>Lugar de nacimiento</label><input id="fLugarNac" value="${esc(p.lugar_nacimiento || "")}"></div>
         <div class="formfield"><label>Estado civil</label><input id="fCivil" value="${esc(p.estado_civil || "")}"></div>
+        <div class="formfield"><label>Género</label><input id="fGenero" value="${esc(p.genero || "")}"></div>
         <div class="formfield"><label>Profesión / oficio</label><input id="fProf" value="${esc(p.profesion_oficio || "")}"></div>
         <div class="formfield"><label>Ciudad</label><input id="fCiudad" value="${esc(p.ciudad || "")}"></div>
         <div class="formfield"><label>Barrio</label><input id="fBarrio" value="${esc(p.barrio || "")}"></div>
+        <div class="formfield"><label>Departamento</label><input id="fDepartamento" value="${esc(p.departamento || "")}"></div>
+        <div class="formfield"><label>Tipo de vivienda</label><input id="fVivienda" value="${esc(p.tipo_vivienda || "")}"></div>
         <div class="formfield"><label>Dirección</label><input id="fDireccion" value="${esc(p.direccion || "")}"></div>
         <div class="formfield"><label>Celular / WhatsApp</label><input id="fCelular" value="${esc(p.celular_whatsapp || "")}"></div>
-        <div class="formfield"><label>Correo electrónico</label><input id="fCorreo" type="email" value="${esc(p.correo || "")}"></div>
-        <div class="formfield"><label>Número de socio</label><input id="fNumero" value="${esc(p.numero_socio || nextMemberNumber())}"></div>
+        <div class="formfield"><label>Correo electrónico</label><input id="fCorreo" type="email" value="${esc(p.correo_electronico || p.correo || "")}"></div>
+        <div class="formfield"><label>Número de socio</label><input id="fNumero" value="${esc(p.numero_socio || nextMemberNumber())}" ${p.id ? "readonly" : ""}><small style="display:block;color:var(--muted);font-size:9px;margin-top:5px">La matrícula histórica no cambia después del alta.</small></div>
       </div>
       <p style="color:var(--muted);font-size:12px;margin-top:14px">Actividad económica (SEPRELAD)</p>
       <div class="formgrid">
@@ -836,6 +866,8 @@
         <div class="formfield"><label>Empresa / RUC</label><input id="fEmpresa" value="${esc(p.empresa_ruc || "")}"></div>
         <div class="formfield"><label>Cargo / función</label><input id="fCargo" value="${esc(p.cargo_laboral || "")}"></div>
         <div class="formfield"><label>Antigüedad</label><input id="fAntiguedad" value="${esc(p.antiguedad_laboral || "")}"></div>
+        <div class="formfield"><label>Dirección laboral</label><input id="fDireccionLaboral" value="${esc(p.direccion_laboral || "")}"></div>
+        <div class="formfield"><label>Ingreso mensual aproximado (Gs.)</label><input id="fIngreso" inputmode="numeric" value="${esc(fmtGsInput(p.ingreso_mensual || 0))}"></div>
         <div class="formfield"><label>Origen de fondos</label><input id="fOrigen" value="${esc(p.origen_fondos || "")}"></div>
         <div class="formfield"><label>Cargo público / político</label><select id="fCargoPublico"><option value="No"${p.cargo_publico !== "Sí" ? " selected" : ""}>No</option><option value="Sí"${p.cargo_publico === "Sí" ? " selected" : ""}>Sí</option></select></div>
       </div>
@@ -843,11 +875,12 @@
       <div class="formgrid">
         <div class="formfield"><label>Certificados suscritos</label><input id="fCert" type="number" min="100" value="${esc(p.certificados_suscritos || 100)}"></div>
         <div class="formfield"><label>Fecha de constitución</label><input id="fFechaConst" type="date" value="${esc(p.fecha_constitucion || FECHA_CONSTITUCION)}"></div>
-        <div class="formfield"><label>Cuotas del saldo (40%) ya pagadas — de 6</label><input id="fCuotas" type="number" min="0" max="6" value="${p.cuotas_saldo_pagadas != null ? esc(p.cuotas_saldo_pagadas) : 6}"></div>
+        <div class="formfield"><label>Cuotas del saldo (40%) ya pagadas — de 6</label><input id="fCuotas" type="number" min="0" max="6" value="${Math.min(6, Math.max(Number(p.cuotas_saldo_pagadas) || 0, Math.round(((Number(p.capital_integrado) || 1800000) - 1800000) / 200000)))}"></div>
       </div>
       <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px"><button class="btn btn-secondary" id="fCancel">Cancelar</button><button class="btn btn-primary" id="fSave">Guardar fundador</button></div>`);
+    bindGsInput($("#fIngreso"));
     $("#fCancel").onclick = closeModal;
-    $("#fSave").onclick = () => {
+    $("#fSave").onclick = busyClick($("#fSave"), async () => {
       const nombreVal = $("#fName").value.trim();
       const cedula = $("#fCedula").value.trim();
       const numero = $("#fNumero").value.trim();
@@ -859,36 +892,53 @@
       const certificados = Math.max(100, parseInt($("#fCert").value, 10) || 100);
       const capitalSuscrito = certificados * 30000;
       const capitalIntegrado60 = Math.round(capitalSuscrito * 0.6);
+      const cuotasSaldo = Math.min(6, Math.max(0, parseInt($("#fCuotas").value, 10) || 0));
+      const capitalIntegrado = Math.min(capitalSuscrito, capitalIntegrado60 + cuotasSaldo * Math.round((capitalSuscrito - capitalIntegrado60) / 6));
       const fechaConst = $("#fFechaConst").value || FECHA_CONSTITUCION;
       const datos = {
         tipo_socio: "fundador",
         apellidos_nombres: nombreVal, cedula,
         nacionalidad: $("#fNac").value.trim() || "Paraguaya",
-        fecha_nacimiento: $("#fNacim").value, estado_civil: $("#fCivil").value.trim(),
+        fecha_nacimiento: $("#fNacim").value, lugar_nacimiento: $("#fLugarNac").value.trim(), estado_civil: $("#fCivil").value.trim(), genero: $("#fGenero").value.trim(),
         profesion_oficio: $("#fProf").value.trim(),
-        ciudad: $("#fCiudad").value.trim(), barrio: $("#fBarrio").value.trim(), direccion: $("#fDireccion").value.trim(),
+        ciudad: $("#fCiudad").value.trim(), barrio: $("#fBarrio").value.trim(), departamento: $("#fDepartamento").value.trim(), tipo_vivienda: $("#fVivienda").value.trim(), direccion: $("#fDireccion").value.trim(),
         celular_whatsapp: $("#fCelular").value.trim(), correo_electronico: $("#fCorreo").value.trim(),
         condicion_laboral: $("#fCondicion").value.trim(), empresa_ruc: $("#fEmpresa").value.trim(),
-        cargo_laboral: $("#fCargo").value.trim(), antiguedad_laboral: $("#fAntiguedad").value.trim(),
+        cargo_laboral: $("#fCargo").value.trim(), antiguedad_laboral: $("#fAntiguedad").value.trim(), direccion_laboral: $("#fDireccionLaboral").value.trim(), ingreso_mensual: parseGs($("#fIngreso").value),
         origen_fondos: $("#fOrigen").value.trim(), cargo_publico: $("#fCargoPublico").value,
         numero_socio: numeroPad, estado: "aprobado",
-        certificados_suscritos: certificados, capital_suscrito: capitalSuscrito, capital_integrado: capitalIntegrado60,
-        cuotas_saldo_pagadas: Math.min(6, Math.max(0, parseInt($("#fCuotas").value, 10) || 0)),
+        certificados_suscritos: certificados, capital_suscrito: capitalSuscrito, capital_integrado: capitalIntegrado,
+        cuotas_saldo_pagadas: cuotasSaldo,
         fecha_constitucion: fechaConst,
         created_at: p.created_at || fechaConst, fecha_revision: fechaConst,
         revisado_por: config.administrador,
         beneficiarios: p.beneficiarios || [], referente_nombre: "", referente_cedula: "",
         pago_confirmado: false, datos_pendiente_revision: false,
       };
-      let registro;
-      if (existente) { Object.assign(existente, datos); registro = existente; }
-      else { registro = Object.assign({ id: "fund-" + Date.now() }, datos); solicitudes.unshift(registro); }
-      config.proximoSocio = Math.max(config.proximoSocio, parseInt(numero, 10) + 1);
-      write(KEYS.config, config);
-      saveSolicitudes(registro);
-      log(`${config.administrador} ${existente ? "actualizó" : "agregó"} a ${nombreVal} como socio fundador N.º ${numeroPad}`);
-      closeModal(); renderAll(); toast(existente ? "Fundador actualizado" : "Socio fundador agregado");
-    };
+      try {
+        let registro;
+        if (supabaseClient && existente) {
+          const { data, error } = await supabaseClient.rpc("fn_actualizar_datos_socio", { p_id: existente.id, p_datos: datos });
+          if (error) throw error;
+          registro = data;
+          Object.assign(existente, registro);
+        } else if (supabaseClient) {
+          registro = await upsertRemote(TABLES.solicitudes, Object.assign({ id: "fund-" + Date.now() }, datos));
+          solicitudes.unshift(registro);
+        } else if (existente) {
+          Object.assign(existente, datos); registro = existente;
+        } else {
+          registro = Object.assign({ id: "fund-" + Date.now() }, datos); solicitudes.unshift(registro);
+        }
+        config.proximoSocio = Math.max(config.proximoSocio, parseInt(numero, 10) + 1);
+        write(KEYS.config, config);
+        write(KEYS.solicitudes, solicitudes);
+        log(`${config.administrador} ${existente ? "actualizó" : "agregó"} a ${nombreVal} como socio fundador N.º ${numeroPad}`);
+        closeModal(); renderAll(); toast(existente ? "Fundador actualizado" : "Socio fundador agregado");
+      } catch (err) {
+        toast(friendlyError(err, "No se pudieron guardar los datos del socio"));
+      }
+    });
   }
 
   function renderMembers() {
@@ -902,7 +952,7 @@
         if (Number.isFinite(numeroA) !== Number.isFinite(numeroB)) return Number.isFinite(numeroA) ? -1 : 1;
         return nombre(a).localeCompare(nombre(b), "es", { sensitivity: "base" });
       });
-    $("#membersBody").innerHTML = rows.map((r) => `<tr><td><strong>${esc(r.numero_socio || "s/n")}</strong></td><td><strong>${esc(nombre(r))}</strong>${tipoSocio(r) === "fundador" ? ' <span style="color:var(--green);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em">· Fundador</span>' : ""}</td><td>${esc(r.cedula || "—")}</td><td>${fmtDate(r.fecha_ingreso || r.fecha_revision)}</td><td>${r.datos_pendiente_revision ? '<span class="badge pendiente">Por revisar</span>' : badge(r.estado_societario || "activo")}</td><td><button class="linkbtn" data-member="${esc(r.id)}">Abrir ficha</button> <button class="linkbtn" data-member-status="${esc(r.id)}">Estado y baja</button></td></tr>`).join("") || '<tr><td colspan="6" class="empty">Todavía no hay socios aprobados.</td></tr>';
+    $("#membersBody").innerHTML = rows.map((r) => `<tr><td><strong>${esc(r.numero_socio || "s/n")}</strong></td><td><strong>${esc(nombre(r))}</strong>${tipoSocio(r) === "fundador" ? ' <span class="founder-mark">Fundador</span>' : ""}</td><td>${esc(r.cedula || "—")}</td><td>${fmtDate(r.fecha_ingreso || r.fecha_revision)}</td><td>${r.datos_pendiente_revision ? '<span class="badge pendiente">Por revisar</span>' : badge(r.estado_societario || "activo")}</td><td><button class="linkbtn" data-member="${esc(r.id)}">Abrir ficha</button> <button class="linkbtn" data-member-status="${esc(r.id)}">Estado y baja</button></td></tr>`).join("") || '<tr><td colspan="6" class="empty">Todavía no hay socios aprobados.</td></tr>';
     $$('[data-member]').forEach((b) => b.onclick = () => openRequest(b.dataset.member));
   }
   function renderActivity() { $("#activityList").innerHTML = actividad.map((a) => `<div class="item"><span class="dot" style="background:var(--green)"></span><div class="item-main"><strong>${esc(a.texto)}</strong><small>${fmtDate(a.fecha)} · ${esc(a.usuario || "Administrador")}</small></div></div>`).join("") || '<div class="empty">Todavía no hay actividad registrada.</div>'; }
@@ -931,8 +981,17 @@
       };
       supabaseClient.from("perfiles_admin").select("*").order("created_at", { ascending: true }).then(({ data, error }) => {
         if (error) { $("#staffList").innerHTML = `<div class="empty">${esc(error.message)}</div>`; return; }
-        $("#staffList").innerHTML = (data || []).map((s) => `<div class="item"><div class="item-main"><strong>${esc(s.nombre)}</strong><small>${esc(s.cargo || "Sin descripción")} · ${esc(s.correo || "—")}${s.telefono ? ` · ${esc(s.telefono)}` : ""}</small><span class="badge ${s.activo === false ? "observada" : "activo"}">${s.activo === false ? "Sin acceso" : "Acceso completo"}</span></div>${esSuperadmin() && s.id !== perfilActual.id ? `<div class="staff-actions"><button class="btn btn-secondary" data-toggle-staff="${esc(s.id)}" data-active="${s.activo === false ? "false" : "true"}">${s.activo === false ? "Activar acceso" : "Desactivar acceso"}</button></div>` : ""}</div>`).join("") || '<div class="empty">Todavía no hay funcionarios registrados.</div>';
+        $("#staffList").innerHTML = (data || []).map((s) => `<div class="item"><div class="item-main"><strong>${esc(s.nombre)}</strong><small>${esc(s.cargo || "Sin descripción")} · ${esc(s.correo || "—")}${s.telefono ? ` · ${esc(s.telefono)}` : ""}</small><span class="badge ${s.activo === false ? "observada" : "activo"}">${s.activo === false ? "Sin acceso" : "Acceso completo"}</span></div>${esSuperadmin() && s.id !== perfilActual.id ? `<div class="staff-actions"><button class="btn btn-secondary" data-toggle-staff="${esc(s.id)}" data-active="${s.activo === false ? "false" : "true"}">${s.activo === false ? "Activar acceso" : "Desactivar acceso"}</button>${s.activo === false ? `<button class="btn btn-secondary" style="color:var(--danger)" data-remove-staff="${esc(s.id)}" data-staff-name="${esc(s.nombre)}">Eliminar invitación</button>` : ""}</div>` : ""}</div>`).join("") || '<div class="empty">Todavía no hay funcionarios registrados.</div>';
         $$('[data-toggle-staff]').forEach((button) => button.onclick = busyClick(button, async () => { try { const activate = button.dataset.active !== "true"; const { error: e2 } = await supabaseClient.rpc("fn_actualizar_estado_perfil", { p_id: button.dataset.toggleStaff, p_activo: activate }); if (e2) throw e2; toast(activate ? "Usuario activado" : "Usuario desactivado"); renderSetting("funcionarios"); } catch (err) { toast(friendlyError(err, "No se pudo cambiar el estado")); } }));
+        $$('[data-remove-staff]').forEach((button) => button.onclick = busyClick(button, async () => {
+          if (!confirm(`¿Eliminar la invitación de ${button.dataset.staffName}? Solo se eliminará si la persona todavía no creó su acceso.`)) return;
+          try {
+            const { data: removed, error: removeError } = await supabaseClient.functions.invoke("administrar-usuarios", { body: { action: "remove_invitation", userId: button.dataset.removeStaff } });
+            if (removeError) throw removeError;
+            if (removed && removed.error) throw Error(removed.error);
+            toast("Invitación eliminada"); renderSetting("funcionarios");
+          } catch (err) { toast(friendlyError(err, "No se pudo eliminar la invitación")); }
+        }));
       });
       return;
     }

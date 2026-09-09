@@ -98,6 +98,9 @@
   for(const [view,kind,table] of [['solicitudes','solicitudes','solicitudes_socios'],['tareas','tareas','tareas_operativas'],['basedatos','campanias','campanias']]) {
     const head=document.querySelector(`#view-${view} .pagehead`);if(!head)continue;
     const button=document.createElement('button');button.className='btn btn-secondary';button.textContent=kind==='campanias'?'Eliminar campañas…':'Eliminar…';button.onclick=()=>bulk(kind,table);head.append(button);
+    let actions=head.querySelector('.pagehead-actions');
+    if(!actions){actions=document.createElement('div');actions.className='pagehead-actions';head.append(actions);}
+    actions.append(button);
   }
   const reportsHead=document.querySelector('#view-reportes .pagehead');
   if(reportsHead){const button=document.createElement('button');button.className='btn btn-secondary';button.textContent='Histórico societario';button.onclick=report;reportsHead.append(button);}
