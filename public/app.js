@@ -847,6 +847,8 @@
 
   function fundadorModal(prefill) {
     const p = prefill || {};
+    const hasCapitalMovements = !!(p.id && window.cimientosOperations?.memberAccount(p.id)?.movements
+      ?.some((movement) => movement.estado !== "anulada" && movement.concepto === "capital_inicial"));
     modal(p.id ? "Revisar socio fundador" : "Agregar socio fundador", `<p style="color:var(--muted);font-size:12px">Alta directa: los socios fundadores ya integran la Cooperativa desde el Acta de Asamblea Constitutiva, no pasan por una solicitud de admisión.${p.datos_pendiente_revision ? " Estos datos los completó el propio socio por el link público — revisalos antes de guardar." : ""}</p>
       <div class="formgrid">
         <div class="formfield"><label>Nombre y apellido</label><input id="fName" value="${esc(p.apellidos_nombres || "")}"></div>
@@ -881,11 +883,18 @@
       <div class="formgrid">
         <div class="formfield"><label>Certificados suscritos</label><input id="fCert" type="number" min="100" value="${esc(p.certificados_suscritos || 100)}"></div>
         <div class="formfield"><label>Fecha de constitución</label><input id="fFechaConst" type="date" value="${esc(p.fecha_constitucion || FECHA_CONSTITUCION)}"></div>
-        <div class="formfield"><label>Capital integrado</label><input readonly value="${esc(fmtGsInput(Number(p.capital_integrado) || 0))}"><small style="display:block;color:var(--muted);font-size:9px;margin-top:5px">Se actualiza únicamente al registrar o anular pagos en Aportes y solidaridad.</small></div>
-        <div class="formfield"><label>Saldo pendiente</label><input readonly value="${esc(fmtGsInput(Math.max(0, (Number(p.capital_suscrito) || 3000000) - (Number(p.capital_integrado) || 0))))}"></div>
+        <div class="formfield"><label>Capital integrado</label><input id="fCapitalIntegrado" inputmode="numeric" value="${esc(fmtGsInput(Number(p.capital_integrado) || 0))}" ${hasCapitalMovements ? "readonly" : ""}><small style="display:block;color:var(--muted);font-size:9px;margin-top:5px">${hasCapitalMovements ? "Ya existen pagos registrados. Para conservar la trazabilidad, registrá o anulá movimientos en Aportes y solidaridad." : "Podés corregir el saldo inicial mientras todavía no existan pagos de capital registrados."}</small></div>
+        <div class="formfield"><label>Saldo pendiente</label><input id="fCapitalPendiente" readonly value="${esc(fmtGsInput(Math.max(0, (Number(p.capital_suscrito) || 3000000) - (Number(p.capital_integrado) || 0))))}"></div>
       </div>
       <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px"><button class="btn btn-secondary" id="fCancel">Cancelar</button><button class="btn btn-primary" id="fSave">Guardar fundador</button></div>`);
     bindGsInput($("#fIngreso"));
+    bindGsInput($("#fCapitalIntegrado"));
+    const refreshFounderBalance = () => {
+      const subscribed = Math.max(100, parseInt($("#fCert").value, 10) || 100) * 30000;
+      $("#fCapitalPendiente").value = fmtGsInput(Math.max(0, subscribed - parseGs($("#fCapitalIntegrado").value)));
+    };
+    $("#fCert").addEventListener("input", refreshFounderBalance);
+    $("#fCapitalIntegrado").addEventListener("input", refreshFounderBalance);
     $("#fCancel").onclick = closeModal;
     $("#fSave").onclick = busyClick($("#fSave"), async () => {
       const nombreVal = $("#fName").value.trim();
@@ -900,6 +909,8 @@
       if (solicitudes.some((x) => x !== existente && x.numero_socio === numeroPad)) return toast("Ese número de socio ya está asignado");
       const certificados = Math.max(100, parseInt($("#fCert").value, 10) || 100);
       const capitalSuscrito = certificados * 30000;
+      const capitalIntegrado = hasCapitalMovements ? Number(p.capital_integrado) || 0 : parseGs($("#fCapitalIntegrado").value);
+      if (capitalIntegrado < 0 || capitalIntegrado > capitalSuscrito) return toast(`El capital integrado debe estar entre Gs. 0 y ${fmtGsInput(capitalSuscrito)}.`);
       const fechaConst = $("#fFechaConst").value || FECHA_CONSTITUCION;
       const datos = {
         tipo_socio: "fundador",
@@ -913,7 +924,7 @@
         cargo_laboral: $("#fCargo").value.trim(), antiguedad_laboral: $("#fAntiguedad").value.trim(), direccion_laboral: $("#fDireccionLaboral").value.trim(), ingreso_mensual: parseGs($("#fIngreso").value),
         origen_fondos: $("#fOrigen").value.trim(), cargo_publico: $("#fCargoPublico").value,
         numero_socio: numeroPad, estado: "aprobado",
-        certificados_suscritos: certificados, capital_suscrito: capitalSuscrito,
+        certificados_suscritos: certificados, capital_suscrito: capitalSuscrito, capital_integrado: capitalIntegrado,
         fecha_constitucion: fechaConst,
         created_at: p.created_at || fechaConst, fecha_revision: fechaConst,
         revisado_por: config.administrador,

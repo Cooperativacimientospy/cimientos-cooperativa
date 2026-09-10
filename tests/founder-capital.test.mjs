@@ -8,7 +8,9 @@ const operations = readFileSync(new URL("../public/app-operaciones.js", import.m
 test("la ficha y tesorería conservan un único saldo real de capital", () => {
   assert.doesNotMatch(app, /capital_integrado\s*\|\|\s*Math\.round/);
   assert.doesNotMatch(app, /cuotas_saldo_pagadas[^\n]+:\s*6/);
-  assert.match(app, /Se actualiza únicamente al registrar o anular pagos/);
+  assert.match(app, /Podés corregir el saldo inicial mientras todavía no existan pagos/);
+  assert.match(app, /hasCapitalMovements/);
+  assert.match(app, /capital_integrado: capitalIntegrado/);
   assert.match(operations, /row\.aporte > pending/);
   assert.match(operations, /Recibo de integración de capital fundacional/);
 });
