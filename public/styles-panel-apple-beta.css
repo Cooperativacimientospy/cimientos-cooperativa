@@ -303,7 +303,9 @@ textarea:focus {
 
 #loginScreen {
   background:
-    radial-gradient(circle at 50% 25%, rgba(102, 151, 31, .10), transparent 24rem),
+    radial-gradient(circle at 18% 18%, rgba(229, 105, 21, .10), transparent 22rem),
+    radial-gradient(circle at 82% 76%, rgba(102, 151, 31, .15), transparent 26rem),
+    linear-gradient(145deg, rgba(255,255,255,.82), rgba(238,244,227,.72)),
     #f4f5f2 !important;
 }
 #loginScreen > .card {
@@ -311,6 +313,15 @@ textarea:focus {
   border-color: rgba(29, 29, 31, .08);
   box-shadow: 0 24px 70px rgba(30, 38, 25, .10);
 }
+#loginScreen > .card::before {
+  content:""; display:block; width:54px; height:4px; border-radius:999px;
+  margin:0 auto 24px; background:linear-gradient(90deg,var(--green),var(--orange));
+}
+#loginScreen .login-brand { padding:0 0 28px; align-items:center; justify-content:center; text-align:left; gap:16px; }
+#loginScreen .login-brand .brandmark { width:66px; height:66px; flex:0 0 66px; }
+#loginScreen .login-brand .brandmark img { width:100%; height:100%; object-fit:contain; }
+#loginScreen .login-brand strong { font-size:21px; letter-spacing:-.025em; }
+#loginScreen .login-brand span { font-size:13px; margin-top:3px; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; }
@@ -452,3 +463,143 @@ html[data-theme="dark"] #loginScreen { background: var(--bg) !important; }
 #passwordSetupForm p { font-size: 12px; line-height: 1.5; }
 #passwordSetupForm a { color: var(--green); }
 #passwordSetupForm #setupError { color: var(--danger); }
+
+/* Barra lateral 2026: jerarquía iOS, lectura cómoda y navegación estable. */
+@media (min-width: 981px) {
+  .app { grid-template-columns: 276px minmax(0, 1fr); }
+}
+
+.sidebar {
+  padding: 22px 16px 16px;
+  background: color-mix(in srgb, var(--bg), #fff 66%);
+}
+
+.sidebar .brand {
+  flex: 0 0 auto;
+  gap: 14px;
+  min-height: 72px;
+  padding: 5px 10px 17px;
+}
+
+.sidebar .brandmark {
+  width: 52px;
+  height: 52px;
+  flex-basis: 52px;
+}
+
+.sidebar .brand strong {
+  font-size: 15px;
+  line-height: 1.2;
+}
+
+.sidebar .brand span {
+  margin-top: 4px;
+  font-size: 11px;
+  line-height: 1.25;
+}
+
+.sidebar .nav {
+  flex: 1 1 auto;
+  min-height: 0;
+  gap: 8px;
+  padding: 1px 2px 8px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+}
+
+.sidebar .nav::-webkit-scrollbar { display: none; }
+
+.sidebar .nav-group {
+  padding: 6px;
+  border: 0;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, .55);
+  box-shadow: inset 0 0 0 1px rgba(29, 29, 31, .055);
+}
+
+.sidebar .nav-label {
+  margin: 1px 10px 5px;
+  color: color-mix(in srgb, var(--muted), var(--ink) 12%);
+  font-size: 10px;
+  font-weight: 760;
+  line-height: 1.2;
+}
+
+.sidebar .nav button {
+  width: 100%;
+  min-height: 39px;
+  padding: 6px 9px;
+  gap: 10px;
+  border-radius: 15px;
+  font-size: 13px;
+}
+
+.sidebar .nav .ico,
+.sidebar .nav button[data-go] .ico {
+  width: 27px !important;
+  height: 27px !important;
+  flex: 0 0 27px;
+  border-radius: 9px;
+}
+
+.sidebar .nav button.active {
+  background: color-mix(in srgb, var(--green), #fff 88%);
+  color: color-mix(in srgb, var(--green), #14220f 18%);
+  box-shadow: none;
+}
+
+.sidebar .nav button.active .ico {
+  background: var(--green);
+  color: #fff;
+}
+
+.sidebar .profile {
+  flex: 0 0 auto;
+  min-height: 62px;
+  margin-top: 4px;
+  padding: 10px 11px;
+  border: 0;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, .82);
+  box-shadow: inset 0 0 0 1px rgba(29, 29, 31, .07), 0 8px 24px rgba(30, 38, 25, .055);
+}
+
+.sidebar .profile .avatar,
+.sidebar .profile-photo {
+  width: 39px;
+  height: 39px;
+  flex: 0 0 39px;
+}
+
+.sidebar .profile strong { font-size: 12.5px; }
+.sidebar .profile small { font-size: 10.5px; }
+
+html[data-theme="dark"] .sidebar {
+  background: color-mix(in srgb, var(--bg), #263027 18%);
+}
+
+html[data-theme="dark"] .sidebar .nav-group {
+  background: rgba(255,255,255,.035);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+
+html[data-theme="dark"] .sidebar .nav button.active {
+  background: color-mix(in srgb, var(--green), transparent 82%);
+  color: var(--green);
+}
+
+@media (max-height: 860px) and (min-width: 981px) {
+  .sidebar { padding-block: 13px 11px; }
+  .sidebar .brand { min-height: 58px; padding-bottom: 10px; }
+  .sidebar .brandmark { width: 43px; height: 43px; flex-basis: 43px; }
+  .sidebar .nav { gap: 5px; }
+  .sidebar .nav-group { padding: 4px 5px; border-radius: 17px; }
+  .sidebar .nav-label { margin-bottom: 2px; font-size: 9px; }
+  .sidebar .nav button { min-height: 32px; padding-block: 3px; font-size: 12px; }
+  .sidebar .nav .ico,
+  .sidebar .nav button[data-go] .ico { width: 24px !important; height: 24px !important; flex-basis: 24px; }
+  .sidebar .profile { min-height: 52px; padding-block: 7px; }
+  .sidebar .profile .avatar,
+  .sidebar .profile-photo { width: 34px; height: 34px; flex-basis: 34px; }
+}

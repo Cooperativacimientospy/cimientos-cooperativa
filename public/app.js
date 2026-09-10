@@ -406,7 +406,9 @@
     ].join("");
     if (tipoSocio(r) === "fundador") {
       const pendiente = !!r.datos_pendiente_revision;
-      modal(`Socio Fundador N.º ${r.numero_socio || "—"}${pendiente ? " · Pendiente de revisión" : ""}`, `${photoPickerHtml(r)}<div class="detailgrid">${personalDetails}${detail("Estado societario", r.estado_societario || "Activo")}${detail("Certificados suscritos", (r.certificados_suscritos || 100) + " × Gs. 30.000")}${detail("Capital suscrito", fmtGs(r.capital_suscrito || 3000000))}${detail("Capital integrado", fmtGs(r.capital_integrado || Math.round((r.capital_suscrito || 3000000) * 0.6)))}${detail("Saldo de capital", fmtGs(Math.max(0, (r.capital_suscrito || 3000000) - (r.capital_integrado || 1800000))))}${detail("Fecha de constitución", fmtDate(r.fecha_constitucion || FECHA_CONSTITUCION))}</div>${pendiente ? '<p style="color:var(--orange);font-size:12px;font-weight:700">Estos datos los completó el propio socio por el link público. Revisalos y confirmá el número de socio y el capital fundacional.</p>' : ""}<div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;margin-top:16px">${tel(r) ? '<button class="btn btn-whatsapp" id="reqWhatsApp" title="Guardá el PDF y adjuntalo en el chat">Abrir WhatsApp Web</button>' : ""}<button class="btn btn-secondary" id="reqContributions">Ver aportes</button><button class="btn btn-secondary" id="reqPrint">Imprimir ficha</button><button class="btn btn-primary" id="reqReview">${pendiente ? "Revisar y confirmar datos" : "Editar datos"}</button></div>`);
+      const capitalSuscrito = Number(r.capital_suscrito) || 3000000;
+      const capitalIntegrado = Number(r.capital_integrado) || 0;
+      modal(`Socio Fundador N.º ${r.numero_socio || "—"}${pendiente ? " · Pendiente de revisión" : ""}`, `${photoPickerHtml(r)}<div class="detailgrid">${personalDetails}${detail("Estado societario", r.estado_societario || "Activo")}${detail("Certificados suscritos", (r.certificados_suscritos || 100) + " × Gs. 30.000")}${detail("Capital suscrito", fmtGs(capitalSuscrito))}${detail("Capital integrado", fmtGs(capitalIntegrado))}${detail("Saldo de capital", fmtGs(Math.max(0, capitalSuscrito - capitalIntegrado)))}${detail("Fecha de constitución", fmtDate(r.fecha_constitucion || FECHA_CONSTITUCION))}</div>${pendiente ? '<p style="color:var(--orange);font-size:12px;font-weight:700">Estos datos están pendientes de revisión administrativa.</p>' : ""}<div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;margin-top:16px">${tel(r) ? '<button class="btn btn-whatsapp" id="reqWhatsApp" title="Guardá el PDF y adjuntalo en el chat">Abrir WhatsApp Web</button>' : ""}<button class="btn btn-secondary" id="reqContributions">Ver aportes</button><button class="btn btn-secondary" id="reqPrint">Imprimir ficha</button><button class="btn btn-primary" id="reqReview">${pendiente ? "Revisar y confirmar datos" : "Editar datos"}</button></div>`);
       wirePhotoPicker(r);
       if (tel(r)) $("#reqWhatsApp").onclick = () => shareMemberWhatsApp(r);
       $("#reqContributions").onclick = () => { closeModal(); go("aportes"); setTimeout(() => { const input = $("#opContributionSearch"); if (input) { input.value = r.cedula || r.numero_socio || nombre(r); input.dispatchEvent(new Event("input", { bubbles: true })); } }, 40); };
@@ -524,9 +526,10 @@
     });
   }
 
-  function printRequest(r) {
+  async function printRequest(r) {
     const w = window.open("", "_blank", "width=820,height=900");
     if (!w) return toast("El navegador bloqueó la ventana de impresión. Habilitá los pop-ups para este sitio.");
+    await window.cimientosIdentity?.load();
     w.document.write(memberPrintHtml(r));
     w.document.close();
   }
@@ -545,7 +548,7 @@
     const numeroSolicitud = "0001-" + String(r.numero_solicitud || 0).padStart(4, "0");
     const docCode = "FIC-" + (r.numero_socio || "SOL" + String(r.numero_solicitud || 0).padStart(4, "0"));
     const documentIdentity = window.cimientosIdentity?.get() || {};
-    const printLogo = documentIdentity.documento_logo || documentIdentity.logo || new URL("assets/logo-cimientos.png", location.href).href;
+    const printLogo = documentIdentity.documento_logo || new URL("assets/logo-cimientos.png", location.href).href;
     const documentName = documentIdentity.documento_nombre || "Cooperativa Cimientos Ltda.";
     const documentContact = documentIdentity.documento_contacto || "+595 974 635630 · cooperativacimientosltda2026@gmail.com";
 
@@ -599,8 +602,8 @@
         </div></section>
         ${esFundador
           ? `<section><h2>Capital fundacional (Art. 8° inc. f)</h2><div class="grid">
-          ${field("Certificados suscritos", (r.certificados_suscritos || 100) + " × Gs. 30.000")}${field("Capital suscrito total", fmtGs(r.capital_suscrito || (r.certificados_suscritos || 100) * 30000))}
-          ${field("Integrado en la asamblea constitutiva (60%)", fmtGs(r.capital_integrado || Math.round((r.capital_suscrito || 3000000) * 0.6)))}${field("Cuotas del saldo (40%) pagadas", (r.cuotas_saldo_pagadas != null ? r.cuotas_saldo_pagadas : 6) + " de 6")}
+          ${field("Certificados suscritos", (r.certificados_suscritos || 100) + " × Gs. 30.000")}${field("Capital suscrito total", fmtGs(Number(r.capital_suscrito) || (Number(r.certificados_suscritos) || 100) * 30000))}
+          ${field("Capital integrado", fmtGs(Number(r.capital_integrado) || 0))}${field("Saldo pendiente", fmtGs(Math.max(0, (Number(r.capital_suscrito) || 3000000) - (Number(r.capital_integrado) || 0))))}
         </div></section>`
           : `<section><h2>Aportes y capital</h2><div class="grid">
           ${field("Derecho de admisión", fmtGs(r.derecho_admision || 150000))}${field("Cuotas partes adelantadas", r.cuotas_partes)}
@@ -689,28 +692,28 @@
         @page{size:A4;margin:0}
         *{box-sizing:border-box}
         body{margin:0;background:#dfe3dc;color:#1c1e1c;font-family:"Nunito Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
-        .paper{position:relative;width:210mm;min-height:297mm;margin:12px auto;background:#fff;padding:15mm 16mm 14mm;page-break-after:always;overflow:hidden;box-shadow:0 4px 22px rgba(20,25,15,.12)}
+        .paper{position:relative;width:210mm;min-height:297mm;margin:12px auto;background:#fff;padding:13mm 15mm 14mm;page-break-after:always;overflow:hidden;box-shadow:0 4px 22px rgba(20,25,15,.12)}
         .paper:last-of-type{page-break-after:auto}
         .watermark{position:absolute;top:46%;left:50%;transform:translate(-50%,-50%) rotate(-24deg);font-size:52px;font-weight:800;letter-spacing:.08em;color:rgba(194,59,43,.09);white-space:nowrap;pointer-events:none;z-index:0}
         .mh{position:relative;z-index:1;display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #1c1e1c;padding-bottom:5mm;margin-bottom:5mm}
         .mh-brand{display:flex;gap:11px;align-items:center}
-        .mh-mark{height:31px;width:auto;max-width:70mm;display:block;object-fit:contain}
-        .mh-contact{font-size:7px;line-height:1.45;color:#8a8f89;border-left:1px solid #e1e4dd;padding-left:10px}
+        .mh-mark{height:45px;width:auto;max-width:76mm;display:block;object-fit:contain}
+        .mh-contact{font-size:8px;line-height:1.45;color:#757a74;border-left:1px solid #e1e4dd;padding-left:10px}
         .mh-name strong{display:block;font-size:12px;letter-spacing:.01em}
         .mh-name span{display:block;font-size:7.5px;color:#767b73;max-width:60mm;line-height:1.35;margin-top:2px}
         .mh-doc{text-align:right}
-        .mh-tag{display:inline-block;background:#eef4e3;color:#27452C;font-size:9px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;padding:3px 8px;border-radius:999px}
+        .mh-tag{display:inline-block;background:#eef4e3;color:#27452C;font-size:10px;font-weight:800;letter-spacing:.02em;padding:4px 10px;border-radius:999px}
         .identity{position:relative;z-index:1;padding-bottom:3.5mm}
         .identity.tight{padding-bottom:5mm}
-        .identity h1{margin:0 0 4px;font-size:19px;letter-spacing:-.02em}
-        .identity-line{margin:0;font-size:10.5px;color:#5a5f58;font-weight:600}
-        section{position:relative;z-index:1;padding:2.6mm 0;border-bottom:1px solid #e4e6e0;break-inside:avoid}
+        .identity h1{margin:0 0 4px;font-size:23px;letter-spacing:-.025em}
+        .identity-line{margin:0;font-size:11.5px;color:#5a5f58;font-weight:600}
+        section{position:relative;z-index:1;padding:3mm 0;border-bottom:1px solid #e4e6e0;break-inside:avoid}
         section.tight{padding-bottom:2mm}
-        section h2{font-size:9.5px;text-transform:uppercase;letter-spacing:.08em;color:#27452C;margin:0 0 2.4mm;font-weight:800}
+        section h2{font-size:11px;letter-spacing:.01em;color:#27452C;margin:0 0 2.5mm;font-weight:800}
         .grid{display:grid;grid-template-columns:1fr 1fr;column-gap:9mm;row-gap:2.2mm}
         .f{break-inside:avoid}
-        .f small{display:block;color:#8a8f89;font-size:7.3px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:1px}
-        .f strong{display:block;font-size:10px;font-weight:650;padding-bottom:1.4mm;border-bottom:1px solid #e9ebe6}
+        .f small{display:block;color:#777c76;font-size:8.4px;letter-spacing:.015em;margin-bottom:2px}
+        .f strong{display:block;font-size:11.5px;font-weight:700;padding-bottom:1.5mm;border-bottom:1px solid #e9ebe6}
         .muted-note{grid-column:1/-1;color:#8a8f89;font-size:9.5px;margin:0}
         .sign-row{position:relative;z-index:1;display:grid;grid-template-columns:1fr 1fr;gap:16mm;margin-top:20mm}
         .sign-row.compact{margin-top:8mm}
@@ -734,7 +737,7 @@
         .checklist{position:relative;z-index:1;max-width:150mm;margin:16mm auto 0;border-top:1px solid #e4e6e0;padding-top:6mm;font-size:9.5px;color:#5a5f58}
         .checklist strong{display:block;margin-bottom:2mm;color:#26281f;font-size:10px}
         .checklist ul{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:1.6mm}
-        .pf{position:absolute;left:16mm;right:16mm;bottom:9mm;display:flex;justify-content:space-between;border-top:1px solid #e4e6e0;padding-top:2.5mm;font-size:7.5px;color:#9a9e96;z-index:1}
+        .pf{position:absolute;left:15mm;right:15mm;bottom:9mm;display:flex;justify-content:space-between;border-top:1px solid #e4e6e0;padding-top:2.5mm;font-size:7.5px;color:#9a9e96;z-index:1}
         .actions{position:fixed;right:18px;bottom:18px;display:flex;gap:8px;z-index:9}
         .actions button{border:0;border-radius:12px;padding:11px 16px;font-weight:750;font-family:inherit;font-size:13px;cursor:pointer}
         .print{background:#27452C;color:#fff;box-shadow:0 8px 20px rgba(39,69,44,.32)}
@@ -878,7 +881,8 @@
       <div class="formgrid">
         <div class="formfield"><label>Certificados suscritos</label><input id="fCert" type="number" min="100" value="${esc(p.certificados_suscritos || 100)}"></div>
         <div class="formfield"><label>Fecha de constitución</label><input id="fFechaConst" type="date" value="${esc(p.fecha_constitucion || FECHA_CONSTITUCION)}"></div>
-        <div class="formfield"><label>Cuotas del saldo (40%) ya pagadas — de 6</label><input id="fCuotas" type="number" min="0" max="6" value="${Math.min(6, Math.max(Number(p.cuotas_saldo_pagadas) || 0, Math.round(((Number(p.capital_integrado) || 1800000) - 1800000) / 200000)))}"></div>
+        <div class="formfield"><label>Capital integrado</label><input readonly value="${esc(fmtGsInput(Number(p.capital_integrado) || 0))}"><small style="display:block;color:var(--muted);font-size:9px;margin-top:5px">Se actualiza únicamente al registrar o anular pagos en Aportes y solidaridad.</small></div>
+        <div class="formfield"><label>Saldo pendiente</label><input readonly value="${esc(fmtGsInput(Math.max(0, (Number(p.capital_suscrito) || 3000000) - (Number(p.capital_integrado) || 0))))}"></div>
       </div>
       <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px"><button class="btn btn-secondary" id="fCancel">Cancelar</button><button class="btn btn-primary" id="fSave">Guardar fundador</button></div>`);
     bindGsInput($("#fIngreso"));
@@ -896,9 +900,6 @@
       if (solicitudes.some((x) => x !== existente && x.numero_socio === numeroPad)) return toast("Ese número de socio ya está asignado");
       const certificados = Math.max(100, parseInt($("#fCert").value, 10) || 100);
       const capitalSuscrito = certificados * 30000;
-      const capitalIntegrado60 = Math.round(capitalSuscrito * 0.6);
-      const cuotasSaldo = Math.min(6, Math.max(0, parseInt($("#fCuotas").value, 10) || 0));
-      const capitalIntegrado = Math.min(capitalSuscrito, capitalIntegrado60 + cuotasSaldo * Math.round((capitalSuscrito - capitalIntegrado60) / 6));
       const fechaConst = $("#fFechaConst").value || FECHA_CONSTITUCION;
       const datos = {
         tipo_socio: "fundador",
@@ -912,8 +913,7 @@
         cargo_laboral: $("#fCargo").value.trim(), antiguedad_laboral: $("#fAntiguedad").value.trim(), direccion_laboral: $("#fDireccionLaboral").value.trim(), ingreso_mensual: parseGs($("#fIngreso").value),
         origen_fondos: $("#fOrigen").value.trim(), cargo_publico: $("#fCargoPublico").value,
         numero_socio: numeroPad, estado: "aprobado",
-        certificados_suscritos: certificados, capital_suscrito: capitalSuscrito, capital_integrado: capitalIntegrado,
-        cuotas_saldo_pagadas: cuotasSaldo,
+        certificados_suscritos: certificados, capital_suscrito: capitalSuscrito,
         fecha_constitucion: fechaConst,
         created_at: p.created_at || fechaConst, fecha_revision: fechaConst,
         revisado_por: config.administrador,
@@ -1152,13 +1152,76 @@
   $$(".filters button").forEach((b) => b.onclick = () => { $$(".filters button").forEach((x) => x.classList.remove("active")); b.classList.add("active"); filter = b.dataset.filter; renderRequests(); });
   $("#requestSearch").oninput = renderRequests; $("#memberSearch").oninput = renderMembers;
   $("#memberTypeFilter").addEventListener("click", (e) => { const b = e.target.closest("[data-member-filter]"); if (!b) return; $$("#memberTypeFilter button").forEach((x) => x.classList.remove("active")); b.classList.add("active"); memberFilter = b.dataset.memberFilter; renderMembers(); });
+  function parseFounderWorkbook(book) {
+    const normalize = (value) => String(value || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().replace(/[^A-Z0-9]+/g, " ").trim();
+    const digits = (value) => String(value || "").replace(/\D/g, "");
+    const money = (value) => typeof value === "number" ? value : (/^[\s\d.,-]+$/.test(String(value || "")) ? parseGs(value) : 0);
+    const records = (pattern) => {
+      const sheetName = book.SheetNames.find((name) => pattern.test(normalize(name)));
+      if (!sheetName) return [];
+      const matrix = XLSX.utils.sheet_to_json(book.Sheets[sheetName], { header: 1, defval: "", raw: true });
+      const headerIndex = matrix.findIndex((row) => row.some((cell) => /CEDULA/.test(normalize(cell))));
+      if (headerIndex < 0) return [];
+      const headers = matrix[headerIndex].map(normalize);
+      return matrix.slice(headerIndex + 1).map((row) => Object.fromEntries(headers.map((header, index) => [header, row[index]]))).filter((row) => Object.values(row).some((value) => value !== ""));
+    };
+    const pick = (row, names) => { for (const name of names) { const key = Object.keys(row).find((item) => item === name || item.includes(name)); if (key && row[key] !== "") return row[key]; } return ""; };
+    const merged = new Map();
+    records(/APORTES? FUNDADORES?/).forEach((row) => {
+      const cedula = digits(pick(row, ["CEDULA DE IDENTIDAD", "CEDULA"])); if (!cedula) return;
+      merged.set(cedula, { ...(merged.get(cedula) || {}), cedula, apellidos: pick(row, ["APELIDOS", "APELLIDOS"]), nombres: pick(row, ["NOMBRES"]), capital_suscrito: money(pick(row, ["CAPITAL COMPROMETIDO"])), capital_integrado: money(pick(row, ["IMPORTE ENTREGADO"])) });
+    });
+    records(/NOMINA DE SOCIOS FUNDADORES?/).forEach((row) => {
+      const cedula = digits(pick(row, ["CEDULA DE IDENTIDAD", "CEDULA"])); if (!cedula) return;
+      const prior = merged.get(cedula) || {};
+      merged.set(cedula, { ...prior, cedula, apellidos: pick(row, ["APELIDOS", "APELLIDOS"]) || prior.apellidos, nombres: pick(row, ["NOMBRES"]) || prior.nombres, nacionalidad: pick(row, ["NACIONALIDAD"]), estado_civil: pick(row, ["ESTADO CIVIL"]), profesion_oficio: pick(row, ["PROFESION"]), direccion: pick(row, ["DOMICILIO REAL"]), ciudad: pick(row, ["DISTRITO"]), departamento: pick(row, ["DEPARTAMENTO CAPITAL"]), capital_suscrito: money(pick(row, ["SUSCRITO"])) || prior.capital_suscrito, capital_integrado: money(pick(row, ["INTEGRADO"])) || prior.capital_integrado });
+    });
+    if (!merged.size) throw Error("No encontramos las hojas de aportes o nómina de fundadores.");
+    return Array.from(merged.values()).map((row) => ({ ...row, apellidos_nombres: [row.apellidos, row.nombres].filter(Boolean).join(" ").trim(), existing: solicitudes.find((item) => tipoSocio(item) === "fundador" && digits(item.cedula) === row.cedula) })).filter((row) => row.apellidos_nombres);
+  }
+  function founderImportPayload(existing, row) {
+    const subscribed = Number(row.capital_suscrito) || Number(existing.capital_suscrito) || 3000000;
+    return {
+      apellidos_nombres: row.apellidos_nombres || existing.apellidos_nombres, cedula: row.cedula,
+      nacionalidad: row.nacionalidad || existing.nacionalidad || "Paraguaya", fecha_nacimiento: existing.fecha_nacimiento || null, lugar_nacimiento: existing.lugar_nacimiento || "", estado_civil: row.estado_civil || existing.estado_civil || "", genero: existing.genero || "", profesion_oficio: row.profesion_oficio || existing.profesion_oficio || "",
+      ciudad: row.ciudad || existing.ciudad || "", barrio: existing.barrio || "", departamento: row.departamento || existing.departamento || "", tipo_vivienda: existing.tipo_vivienda || "", direccion: row.direccion || existing.direccion || "", celular_whatsapp: existing.celular_whatsapp || "", correo_electronico: existing.correo_electronico || "",
+      condicion_laboral: existing.condicion_laboral || "", empresa_ruc: existing.empresa_ruc || "", cargo_laboral: existing.cargo_laboral || "", antiguedad_laboral: existing.antiguedad_laboral || "", direccion_laboral: existing.direccion_laboral || "", ingreso_mensual: Number(existing.ingreso_mensual) || 0, origen_fondos: existing.origen_fondos || "", cargo_publico: existing.cargo_publico || "No",
+      certificados_suscritos: Math.max(100, Math.round(subscribed / 30000)), capital_suscrito: subscribed, capital_integrado: Math.max(Number(existing.capital_integrado) || 0, Number(row.capital_integrado) || 0), cuotas_saldo_pagadas: Number(existing.cuotas_saldo_pagadas) || 0, fecha_constitucion: existing.fecha_constitucion || FECHA_CONSTITUCION
+    };
+  }
   $("#importFundadores").onclick = () => {
-    if (configInstitucional && configInstitucional.cierre_fundacional) {
-      return modal("Nómina fundacional cerrada", `<p style="color:var(--muted);font-size:13px">La nómina de fundadores quedó cerrada técnicamente${configInstitucional.cierre_fundacional_por ? ` por ${esc(configInstitucional.cierre_fundacional_por)}` : ""}${configInstitucional.cierre_fundacional_fecha ? ` el ${esc(fmtDate(configInstitucional.cierre_fundacional_fecha))}` : ""}. Ya no se pueden importar ni agregar fundadores nuevos — solo corregir datos de un fundador existente, abriendo su ficha en el Libro de Socios.</p><div style="display:flex;justify-content:flex-end;margin-top:16px"><button class="btn btn-primary" id="fCierreOk">Entendido</button></div>`), void ($("#fCierreOk").onclick = closeModal);
-    }
     if (!requireProfileGuard()) return;
-    modal("Importar fundadores", `<p style="color:var(--muted);font-size:12px">La nómina de fundadores es cerrada. Esta herramienta solo completa la carga inicial. Columnas mínimas: <strong>numero_socio, apellidos_nombres, cedula</strong>.</p><div class="formfield"><label>Planilla Excel o CSV</label><input id="founderFile" type="file" accept=".xlsx,.xls,.csv"></div><div id="founderImportStatus" style="margin-top:12px;font-size:12px;color:var(--muted)"></div><div style="display:flex;justify-content:flex-end;margin-top:16px"><button class="btn btn-primary" id="founderValidate">Validar e importar</button></div>`);
-    $("#founderValidate").onclick=busyClick($("#founderValidate"),async()=>{const file=$("#founderFile").files?.[0],status=$("#founderImportStatus");if(!file)return toast("Elegí una planilla");try{const data=await file.arrayBuffer(),book=XLSX.read(data),rows=XLSX.utils.sheet_to_json(book.Sheets[book.SheetNames[0]],{defval:""});if(!rows.length)throw Error("La planilla está vacía");const clean=rows.map((row,i)=>{const numero=String(row.numero_socio||row["N.º de socio"]||row.numero||"").trim(),name=String(row.apellidos_nombres||row.nombre||row["Apellidos y Nombres"]||"").trim(),cedula=String(row.cedula||row["Cédula"]||"").trim();if(!numero||!name||!cedula)throw Error(`Fila ${i+2}: faltan número, nombre o cédula`);return{id:String(row.id||`fundador-${Date.now()}-${i}`),tipo_socio:"fundador",estado:"aprobado",numero_socio:numero.padStart(4,"0"),apellidos_nombres:name,cedula,celular_whatsapp:String(row.celular_whatsapp||row.celular||""),correo_electronico:String(row.correo_electronico||row.correo||""),created_at:row.created_at||now(),fecha_constitucion:FECHA_CONSTITUCION,datos_pendiente_revision:false}});const numbers=new Set(),ids=new Set();clean.forEach((r)=>{if(numbers.has(r.numero_socio))throw Error(`Número duplicado: ${r.numero_socio}`);if(ids.has(r.cedula))throw Error(`Cédula duplicada: ${r.cedula}`);numbers.add(r.numero_socio);ids.add(r.cedula)});for(const r of clean){const existing=solicitudes.find((x)=>tipoSocio(x)==="fundador"&&(x.cedula===r.cedula||x.numero_socio===r.numero_socio));if(existing)Object.assign(existing,r,{id:existing.id});else solicitudes.push(r);saveSolicitudes(existing||r)}status.textContent=`${clean.length} fundador(es) importados correctamente.`;log(`${config.administrador} importó ${clean.length} socio(s) fundador(es)`);renderAll();toast("Importación completada")}catch(err){status.textContent=friendlyError(err,"No se pudo importar la planilla");status.style.color="var(--danger)"}});
+    const closed = !!(configInstitucional && configInstitucional.cierre_fundacional);
+    modal("Importar datos y aportes de fundadores", `<p style="color:var(--muted);font-size:12px">El sistema reconoce las hojas <strong>Aportes Fundadores</strong> y <strong>Nómina de Socios Fundadores</strong>, y vincula cada fila por cédula.</p>${closed ? '<p style="color:var(--orange);font-size:12px;font-weight:700">La nómina está cerrada: solo se actualizarán fundadores existentes. No se crearán socios ni se cambiarán matrículas.</p>' : ""}<div class="formfield"><label>Planilla Excel</label><input id="founderFile" type="file" accept=".xlsx,.xls"></div><div id="founderImportStatus" style="margin-top:12px;font-size:12px;color:var(--muted)"></div><div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px"><button class="btn btn-secondary" id="founderCancel">Cancelar</button><button class="btn btn-primary" id="founderValidate">Analizar planilla</button></div>`);
+    $("#founderCancel").onclick = closeModal;
+    let preview = [];
+    $("#founderValidate").onclick = busyClick($("#founderValidate"), async () => {
+      const file = $("#founderFile").files?.[0], status = $("#founderImportStatus"), button = $("#founderValidate");
+      if (!file) return toast("Elegí una planilla");
+      try {
+        if (!preview.length) {
+          preview = parseFounderWorkbook(XLSX.read(await file.arrayBuffer()));
+          const matched = preview.filter((row) => row.existing), unmatched = preview.filter((row) => !row.existing);
+          status.innerHTML = `<div class="detailgrid">${detail("Filas reconocidas", preview.length)}${detail("Vinculadas por cédula", matched.length)}${detail("Sin coincidencia", unmatched.length)}${detail("Acción", matched.length ? "Actualizar datos y capital" : "Nada para aplicar")}</div>${unmatched.length ? `<p style="color:var(--orange);margin-top:10px">No se modificarán ${unmatched.length} fila(s) sin socio coincidente. Revisá sus cédulas o cargalas primero en el padrón.</p>` : ""}`;
+          button.textContent = matched.length ? `Aplicar ${matched.length} actualizaciones` : "Sin coincidencias";
+          button.disabled = !matched.length;
+          return;
+        }
+        const matched = preview.filter((row) => row.existing);
+        if (!confirm(`¿Actualizar datos y capital de ${matched.length} socio(s) fundador(es)? Las matrículas no cambiarán.`)) return;
+        for (const row of matched) {
+          const payload = founderImportPayload(row.existing, row);
+          if (supabaseClient) {
+            const { data, error } = await supabaseClient.rpc("fn_actualizar_datos_socio", { p_id: row.existing.id, p_datos: payload });
+            if (error) throw error;
+            Object.assign(row.existing, data);
+          } else Object.assign(row.existing, payload);
+        }
+        write(KEYS.solicitudes, solicitudes); await window.cimientosOperations?.refresh(); renderAll();
+        log(`${config.administrador} importó datos y capital de ${matched.length} socio(s) fundador(es)`);
+        closeModal(); toast("Planilla importada correctamente");
+      } catch (err) { status.textContent = friendlyError(err, err.message || "No se pudo importar la planilla"); status.style.color = "var(--danger)"; }
+    });
   };
   // Búsqueda global real: recorre socios admitidos, solicitudes en curso y
   // pre-registros (en ese orden de prioridad) y abre la sección correcta —
