@@ -25,5 +25,7 @@ test("la importación reconoce la planilla institucional sin alterar matrículas
   assert.match(app, /NOMINA DE SOCIOS FUNDADORES\?/);
   assert.match(app, /Vinculadas por cédula/);
   assert.match(app, /Las matrículas no cambiarán/);
-  assert.match(app, /Math\.max\(Number\(existing\.capital_integrado\)/);
+  assert.match(app, /capitalMovements/);
+  assert.match(app, /Number\.isFinite\(importedIntegrated\)/);
+  assert.match(app, /Cuando ya existen movimientos, nunca los reduce/);
 });

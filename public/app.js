@@ -1181,18 +1181,24 @@
   }
   function founderImportPayload(existing, row) {
     const subscribed = Number(row.capital_suscrito) || Number(existing.capital_suscrito) || 3000000;
+    const capitalMovements = window.cimientosOperations?.memberAccount(existing.id)?.movements
+      ?.some((movement) => movement.estado !== "anulada" && movement.concepto === "capital_inicial");
+    const importedIntegrated = Number(row.capital_integrado);
+    const integrated = capitalMovements
+      ? Math.max(Number(existing.capital_integrado) || 0, importedIntegrated || 0)
+      : (Number.isFinite(importedIntegrated) ? importedIntegrated : Number(existing.capital_integrado) || 0);
     return {
       apellidos_nombres: row.apellidos_nombres || existing.apellidos_nombres, cedula: row.cedula,
       nacionalidad: row.nacionalidad || existing.nacionalidad || "Paraguaya", fecha_nacimiento: existing.fecha_nacimiento || null, lugar_nacimiento: existing.lugar_nacimiento || "", estado_civil: row.estado_civil || existing.estado_civil || "", genero: existing.genero || "", profesion_oficio: row.profesion_oficio || existing.profesion_oficio || "",
       ciudad: row.ciudad || existing.ciudad || "", barrio: existing.barrio || "", departamento: row.departamento || existing.departamento || "", tipo_vivienda: existing.tipo_vivienda || "", direccion: row.direccion || existing.direccion || "", celular_whatsapp: existing.celular_whatsapp || "", correo_electronico: existing.correo_electronico || "",
       condicion_laboral: existing.condicion_laboral || "", empresa_ruc: existing.empresa_ruc || "", cargo_laboral: existing.cargo_laboral || "", antiguedad_laboral: existing.antiguedad_laboral || "", direccion_laboral: existing.direccion_laboral || "", ingreso_mensual: Number(existing.ingreso_mensual) || 0, origen_fondos: existing.origen_fondos || "", cargo_publico: existing.cargo_publico || "No",
-      certificados_suscritos: Math.max(100, Math.round(subscribed / 30000)), capital_suscrito: subscribed, capital_integrado: Math.max(Number(existing.capital_integrado) || 0, Number(row.capital_integrado) || 0), cuotas_saldo_pagadas: Number(existing.cuotas_saldo_pagadas) || 0, fecha_constitucion: existing.fecha_constitucion || FECHA_CONSTITUCION
+      certificados_suscritos: Math.max(100, Math.round(subscribed / 30000)), capital_suscrito: subscribed, capital_integrado: Math.min(subscribed, Math.max(0, integrated)), cuotas_saldo_pagadas: Number(existing.cuotas_saldo_pagadas) || 0, fecha_constitucion: existing.fecha_constitucion || FECHA_CONSTITUCION
     };
   }
   $("#importFundadores").onclick = () => {
     if (!requireProfileGuard()) return;
     const closed = !!(configInstitucional && configInstitucional.cierre_fundacional);
-    modal("Importar datos y aportes de fundadores", `<p style="color:var(--muted);font-size:12px">El sistema reconoce las hojas <strong>Aportes Fundadores</strong> y <strong>Nómina de Socios Fundadores</strong>, y vincula cada fila por cédula.</p>${closed ? '<p style="color:var(--orange);font-size:12px;font-weight:700">La nómina está cerrada: solo se actualizarán fundadores existentes. No se crearán socios ni se cambiarán matrículas.</p>' : ""}<div class="formfield"><label>Planilla Excel</label><input id="founderFile" type="file" accept=".xlsx,.xls"></div><div id="founderImportStatus" style="margin-top:12px;font-size:12px;color:var(--muted)"></div><div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px"><button class="btn btn-secondary" id="founderCancel">Cancelar</button><button class="btn btn-primary" id="founderValidate">Analizar planilla</button></div>`);
+    modal("Importar datos y aportes de fundadores", `<p style="color:var(--muted);font-size:12px">El sistema reconoce las hojas <strong>Aportes Fundadores</strong> y <strong>Nómina de Socios Fundadores</strong>, y vincula cada fila por cédula. Si todavía no hay pagos registrados en el panel, el importe de la planilla corrige el saldo inicial. Cuando ya existen movimientos, nunca los reduce.</p>${closed ? '<p style="color:var(--orange);font-size:12px;font-weight:700">La nómina está cerrada: solo se actualizarán fundadores existentes. No se crearán socios ni se cambiarán matrículas.</p>' : ""}<div class="formfield"><label>Planilla Excel</label><input id="founderFile" type="file" accept=".xlsx,.xls"></div><div id="founderImportStatus" style="margin-top:12px;font-size:12px;color:var(--muted)"></div><div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px"><button class="btn btn-secondary" id="founderCancel">Cancelar</button><button class="btn btn-primary" id="founderValidate">Analizar planilla</button></div>`);
     $("#founderCancel").onclick = closeModal;
     let preview = [];
     $("#founderValidate").onclick = busyClick($("#founderValidate"), async () => {
