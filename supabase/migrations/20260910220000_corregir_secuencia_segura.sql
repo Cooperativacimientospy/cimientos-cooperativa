@@ -63,8 +63,30 @@ begin
 
   return v_row;
 end;
+$$;
 
 revoke all on function public.fn_corregir_secuencia_socios(int,text) from public, anon;
 grant execute on function public.fn_corregir_secuencia_socios(int,text) to authenticated;
+
+-- Corrige únicamente la instalación afectada por el valor inicial 39:
+-- 37 matrículas históricas, 0038 libre y secuencia todavía sin consumir.
+do $$
+begin
+  if (select proximo_numero_socio from public.configuracion_institucional where id = 1) = 39
+     and coalesce((select max(numero) from public.matriculas_historicas), 0) = 37
+     and not exists (select 1 from public.matriculas_historicas where numero = 38) then
+    perform set_config('cimientos.corrigiendo_contador', '1', true);
+    update public.configuracion_institucional
+    set proximo_numero_socio = 38, updated_at = now()
+    where id = 1;
+    perform setval('public.socios_matricula_seq', 38, false);
+    insert into public.auditoria_solicitudes
+      (solicitud_id, accion, detalle, usuario_id, usuario_email)
+    values
+      (null, 'corregir_secuencia_socios',
+       'Próximo N.º de socio: 39 -> 38 · Motivo: corrección técnica; existen 37 fundadores y la matrícula 0038 nunca fue asignada',
+       null, 'migracion@cimientos.local');
+  end if;
+end $$;
 
 commit;
