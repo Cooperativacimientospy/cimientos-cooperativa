@@ -43,7 +43,7 @@ create unique index if not exists ux_solicitudes_numero_socio
 -- ============================================================
 create table if not exists public.configuracion_institucional (
   id int primary key default 1,
-  proximo_numero_socio int not null default 39, -- ⚠️ confirmar que sea el correcto (fundadores 1 a 38 asignados fuera del sistema)
+  proximo_numero_socio int not null default 38, -- 37 fundadores: el primer socio ordinario recibe 0038
   cierre_fundacional boolean not null default false,
   cierre_fundacional_fecha timestamptz,
   cierre_fundacional_por text,

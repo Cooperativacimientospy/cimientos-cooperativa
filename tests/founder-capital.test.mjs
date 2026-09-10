@@ -4,6 +4,7 @@ import test from "node:test";
 
 const app = readFileSync(new URL("../public/app.js", import.meta.url), "utf8");
 const operations = readFileSync(new URL("../public/app-operaciones.js", import.meta.url), "utf8");
+const safeSequence = readFileSync(new URL("../supabase/migrations/20260910220000_corregir_secuencia_segura.sql", import.meta.url), "utf8");
 
 test("la ficha y tesorería conservan un único saldo real de capital", () => {
   assert.doesNotMatch(app, /capital_integrado\s*\|\|\s*Math\.round/);
@@ -13,6 +14,13 @@ test("la ficha y tesorería conservan un único saldo real de capital", () => {
   assert.match(app, /capital_integrado: capitalIntegrado/);
   assert.match(operations, /row\.aporte > pending/);
   assert.match(operations, /Recibo de integración de capital fundacional/);
+});
+
+test("la corrección de secuencia preserva matrículas históricas y sincroniza el contador real", () => {
+  assert.match(safeSequence, /max\(numero\).*\+ 1/s);
+  assert.match(safeSequence, /p_proximo_numero < v_minimo/);
+  assert.match(safeSequence, /setval\('public\.socios_matricula_seq', p_proximo_numero, false\)/);
+  assert.match(safeSequence, /auditoria_solicitudes/);
 });
 
 test("los PDF usan exclusivamente la identidad documental configurada", () => {
